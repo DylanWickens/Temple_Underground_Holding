@@ -69,6 +69,11 @@ body {
 
   --text-mono-list-item: 16px;
 
+  --text-nav-reg-M: 16px;
+  --text-nav-reg-D: 16px;
+
+  --text-body-sm-M: 0.875rem;
+  --text-body-sm-D: 1rem;
 
   /* Tracking */
   --tracking-display-lg-M: -0.02em;
@@ -90,6 +95,11 @@ body {
 
   --tracking-mono-list-item: 0.03em;
 
+  --tracking-nav-M: -0.01em;
+  --tracking-nav-D: -0.01em;
+
+  --tracking-body-sm-M: 0.00em;
+  --tracking-body-sm-M: -0.01em;
 
   /* Leading */
   --leading-display-lg-M: 1.4;
@@ -110,6 +120,11 @@ body {
   --leading-mono-img-caption-D: 1.5;
 
   --leading-mono-list-item: 1.25;
+
+  --leading-body-sm-M: 1.5;
+  --leading-body-sm-D: 1.3;
+
+
 
   /* Radius */
   --radius-xs: 0.125rem;

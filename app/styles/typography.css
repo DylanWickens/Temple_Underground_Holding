@@ -76,3 +76,45 @@
     line-height: var(--leading-mono-list-item);
     letter-spacing: var(--tracking-mono-list-item);
 }
+
+@utility nav {
+    font-family: var(--font-sans);
+    font-size: var(--text-nav-M);
+    line-height: 150%;
+    letter-spacing: var(--tracking-nav-M);
+    
+    @variant md {
+        font-size: var(--text-nav-reg-D);
+        letter-spacing: var(--tracking-nav-D);
+    }
+}
+
+@utility nav {
+    font-family: var(--font-sans);
+    font-size: var(--text-nav-reg-M);
+    line-height: 130%;
+    letter-spacing: var(--tracking-nav-M);
+    transition: color 120ms ease-out;
+
+    &:hover {
+        color: var(--color-text-secondary);
+    }
+
+    @variant md {
+        font-size: var(--text-nav-reg-D);
+        letter-spacing: var(--tracking-nav-D);
+    }
+}
+
+@utility body-sm {
+    font-family: var(--font-sans);
+    font-size: var(--text-body-sm-M);
+    line-height: var(--leading-body-sm-M);
+    letter-spacing: var(--tracking-body-sm-M);
+
+    @variant md {
+        font-size: var(--text-body-sm-D);
+        line-height: var(--leading-body-sm-D);
+        letter-spacing: var(--tracking-body-sm-D);
+    }
+}

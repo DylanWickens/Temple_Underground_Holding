@@ -2,8 +2,8 @@
 @import "./typography.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: var(--color-background-primary);
+  --foreground: var(--color-text-primary);
 }
 
 @theme inline {
@@ -14,19 +14,32 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #f1f1f1;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
 }
 
 @theme {
+
+  /* Colors — Primitives */
+  --color-black-1000: #0a0a0a;
+  --color-black-900: #1a1a1a;
+  --color-gray-600: #4f4f4f;
+  --color-gray-400: #7e7e7e;
+  --color-gray-200: #9d9d9d;
+  --color-white-100: #f1f1f1;
+
+  /* Colors — Semantic */
+  --color-background-primary: var(--color-black-1000);
+  --color-background-secondary: var(--color-black-900);
+  --color-surface-card: var(--color-gray-600);
+  --color-text-primary: var(--color-white-100);
+  --color-text-secondary: var(--color-gray-200);
+  --color-text-muted: var(--color-gray-400);
+  --color-text-inverted: var(--color-black-1000);
+  --color-border-default: var(--color-gray-600);
+  --color-border-subtle: var(--color-black-900);
+
   /* Scales */
   --scale-base: 0.25rem;
 

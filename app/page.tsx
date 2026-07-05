@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <div>
       <main>
-        <h1 className="font-sans">Temple</h1>
+        <h1 className="display-hero">Temple</h1>
 
         {/* ThreeJS Scene */}
 

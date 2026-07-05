@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./typography.css";
 
 :root {
   --background: #ffffff;
@@ -16,11 +17,91 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground: #f1f1f1;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+@theme {
+  /* Scales */
+  --scale-base: 0.25rem;
+
+  /* Spacing & Padding */
+  --spacing-content: 4rem;
+  --spacing-page: 5rem;
+  --spacing-section: 5rem;
+  --spacing-section-lg: 7.5rem;
+
+  /* Typescale */
+  --text-display-lg-M: 24px;
+  --text-display-lg-D: 40px;
+
+  --text-display-hero-M: 40px;
+  --text-display-hero-D: 64px;
+
+  --text-heading-lg-M: 24px;
+  --text-heading-lg-D: 32px; 
+
+  --text-mono-label-M: 9px;
+
+  --text-mono-section-caption-M: 9px;
+  --text-mono-section-caption-D: 11px;
+
+  --text-mono-img-caption-M: 11px;
+  --text-mono-img-caption-D: 9px;
+
+  --text-mono-list-item: 16px;
+
+
+  /* Tracking */
+  --tracking-display-lg-M: -0.02em;
+  --tracking-display-lg-D: -0.02em;
+
+  --tracking-display-hero-M: -0.055em;
+  --tracking-display-hero-D: -0.055em;
+
+  --tracking-heading-lg-M: -0.02em;
+  --tracking-heading-lg-D: -0.02em;
+
+  --tracking-mono-label-M: 0.12em;
+
+  --tracking-mono-section-caption-M: 0.11em;
+  --tracking-mono-section-caption-D: 0.08em;
+
+  --tracking-mono-img-caption-M: 0.11em;
+  --tracking-mono-img-caption-D: 0.08em;
+
+  --tracking-mono-list-item: 0.03em;
+
+
+  /* Leading */
+  --leading-display-lg-M: 1.4;
+  --leading-display-lg-D: 1.2;
+
+  --leading-display-hero-M: 0.78;
+  --leading-display-hero-D: 0.78;
+
+  --leading-heading-lg-M: 1.1;
+  --leading-heading-lg-D: 1.1;
+
+  --leading-mono-label-M: 1.5;
+
+  --leading-mono-section-caption-M: 1.5;
+  --leading-mono-section-caption-D: 1.5;
+
+  --leading-mono-img-caption-M: 1.5;
+  --leading-mono-img-caption-D: 1.5;
+
+  --leading-mono-list-item: 1.25;
+
+  /* Radius */
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-full: 9999px;
 }

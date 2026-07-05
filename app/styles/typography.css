@@ -1,7 +1,78 @@
+@utility display-lg {
+    font-family: var(--font-sans);
+    font-size: var(--text-display-lg-M);
+    line-height: var(--leading-display-lg-M);
+    letter-spacing: var(--tracking-display-lg-M);
 
-
-@theme {
-    .serif-section-title {
-        font-family: var(--font-serif_);
+    @variant md {
+        font-size: var(--text-display-lg-D);
+        line-height: var(--leading-display-lg-D);
+        letter-spacing: var(--tracking-display-lg-D);
     }
+}
+
+@utility display-hero {
+    font-family: var(--font-serif);
+    font-size: var(--text-display-hero-M);
+    line-height: var(--leading-display-hero-M);
+    letter-spacing: var(--tracking-display-hero-M);
+
+    @variant md {
+        font-size: var(--text-display-hero-D);
+        line-height: var(--leading-display-hero-D);
+        letter-spacing: var(--tracking-display-hero-D);
+    }
+}
+
+@utility heading-lg {
+    font-family: var(--font-sans);
+    font-size: var(--text-heading-lg-M);
+    line-height: var(--leading-heading-lg-M);
+    letter-spacing: var(--tracking-heading-lg-M);
+
+    @variant md {
+        font-size: var(--text-heading-lg-D);
+        line-height: var(--leading-heading-lg-D);
+        letter-spacing: var(--tracking-heading-lg-D);
+    }
+}
+
+@utility mono-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-mono-label-M);
+    line-height: var(--leading-mono-label-M);
+    letter-spacing: var(--tracking-mono-label-M);
+}
+
+@utility mono-section-caption {
+    font-family: var(--font-mono);
+    font-size: var(--text-mono-section-caption-M);
+    line-height: var(--leading-mono-section-caption-M);
+    letter-spacing: var(--tracking-mono-section-caption-M);
+
+    @variant md {
+        font-size: var(--text-mono-section-caption-D);
+        line-height: var(--leading-mono-section-caption-D);
+        letter-spacing: var(--tracking-mono-section-caption-D);
+    }
+}
+
+@utility mono-img-caption {
+    font-family: var(--font-mono);
+    font-size: var(--text-mono-img-caption-M);
+    line-height: var(--leading-mono-img-caption-M);
+    letter-spacing: var(--tracking-mono-img-caption-M);
+
+    @variant md {
+        font-size: var(--text-mono-img-caption-D);
+        line-height: var(--leading-mono-img-caption-D);
+        letter-spacing: var(--tracking-mono-img-caption-D);
+    }
+}
+
+@utility mono-list-item {
+    font-family: var(--font-mono);
+    font-size: var(--text-mono-list-item);
+    line-height: var(--leading-mono-list-item);
+    letter-spacing: var(--tracking-mono-list-item);
 }

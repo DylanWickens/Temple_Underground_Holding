@@ -4,6 +4,7 @@ import HeroCanvas from "./ThreeScenes/HeroScene/HeroCanvas";
 import EquipmentListItem from "./components/EquipmentListItem";
 import SectionTitle from "./components/shared/SectionTitle";
 import LargerEquipmentList from "./components/LargerEquipmentList";
+import EquipmentListM from "./components/shared/EquipmentListM";
 
 
 
@@ -75,6 +76,7 @@ export default function Home() {
                       alt="Live room interior"
                       width={361}
                       height={448}
+                      loading="eager"
                     />
                     <figcaption className="mono-img-caption uppercase">
                       LIVE ROOM
@@ -95,13 +97,20 @@ export default function Home() {
               </div>
             </div>
           </section>
-          <section className="md:max-w-[1440px] md:px-16 justify-center items-center  w-full">
-            <div className="pb-32">
-              <SectionTitle title="Equipment" label="002"></SectionTitle>
-              <a download={null} className="text-muted">Full list available on request</a>
-            </div>
 
-            <div className="hidden md:flex w-full justify-between max-w-[1920px]">
+          <h1>TRHEE JS SCENE</h1>
+
+          <section className="md:max-w-[1440px] sm:px-16 justify-center items-center  w-full pt-128">
+            <div className="flex justify-between gap-y-4 pb-24 px-4 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
+              <SectionTitle title="Equipment" label="002"></SectionTitle>
+              <a
+                download={null}
+                className="text-muted hover:text-secondary transition-colors 120ms ease-in-out cursor-pointer select-none text-nowrap">
+                Full list available on request
+              </a>
+            </div>
+            {/* Desktop */}
+            <div className="hidden min-[1396px]:flex w-full justify-between max-w-[1920px]">
               <div className="max-w-[400px]">
                 <EquipmentListItem index={0} htmlId="consoles-list" />
                 <EquipmentListItem index={1} htmlId="monitoring-list" />
@@ -115,7 +124,12 @@ export default function Home() {
                 <LargerEquipmentList index={6} />
               </div>
             </div>
+
+            {/* Mobile */}
+            <EquipmentListM />
           </section>
+
+          <section className="px-8 md:max-w-[1440px] md:px-16"></section>
         </div>
       </main>
     </div>

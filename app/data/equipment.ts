@@ -8,6 +8,10 @@ export type EquipmentCatagory = {
   items: EquipmentItem[];
 };
 
+export type FavoriteItem = {
+  title: string;
+}
+
 export const equipmentCatagories: EquipmentCatagory[] = [
   {
     id: "consoles",
@@ -195,3 +199,16 @@ export const equipmentCatagories: EquipmentCatagory[] = [
     ],
   },
 ];
+
+export const favoriteItems: FavoriteItem[] = [
+  { title: "Avid S6 M40 16-5-D" },
+  { title: "Trident 32 Channel" },
+  { title: "Neve 88RS" },
+  { title: "Moog 3 Band EQ" },
+  { title: "Moog 10 Band EQ" },
+  { title: "Arturia Microfreak" },
+  { title: "Arturia MatrixBrute" },
+  { title: "Behringer Grey Meany" },
+  { title: "Behringer Blue Marvin" },
+];
+

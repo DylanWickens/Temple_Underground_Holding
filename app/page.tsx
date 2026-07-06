@@ -101,7 +101,7 @@ export default function Home() {
             </div>
 
             <div className="hidden md:flex w-full justify-between max-w-[1920px]">
-              <div className="max-w-[320px]">
+              <div className="max-w-[400px]">
                 <EquipmentListItem index={0} htmlId="consoles-list" />
                 <EquipmentListItem index={1} htmlId="monitoring-list" />
                 <EquipmentListItem index={2} htmlId="tpi-studio-list" />

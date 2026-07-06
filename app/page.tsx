@@ -2,10 +2,13 @@ import Image from "next/image";
 import Navbar from "./components/shared/Navbar";
 import HeroCanvas from "./ThreeScenes/HeroScene/HeroCanvas";
 import EquipmentListItem from "./components/EquipmentListItem";
+import SectionTitle from "./components/shared/SectionTitle";
+import LargerEquipmentList from "./components/LargerEquipmentList";
+
 
 
 export default function Home() {
-  
+
   return (
     <div>
       <main className="overflow-x-hidden">
@@ -35,14 +38,7 @@ export default function Home() {
             id="about"
             className="flex flex-col w-full px-4 justify-center items-center gap-y-16 md:px-16">
             <div className="flex flex-col gap-y-section md:max-w-[1440px] pb-16 md:pb-24">
-              <div className="flex gap-x-4 md:gap-x-6">
-                <h3 className="display-hero">About</h3>
-                <span
-                  aria-label="Section number"
-                  className="mono-section-caption text-text-muted pt-1">
-                  001
-                </span>
-              </div>
+              <SectionTitle title="About" label="001"></SectionTitle>
 
               <h3 className="display-lg">
                 Temple is a residential studio and creative retreat set within a historic
@@ -99,14 +95,24 @@ export default function Home() {
               </div>
             </div>
           </section>
+          <section className="md:max-w-[1440px] md:px-16 justify-center items-center  w-full">
+            <div className="pb-32">
+              <SectionTitle title="Equipment" label="002"></SectionTitle>
+            </div>
 
-          <section className="hidden md:block">
-            <div>
-              <EquipmentListItem index={0} htmlId="consoles-list" />
-              <EquipmentListItem index={1} htmlId="consoles-list" />
-              <EquipmentListItem index={2} htmlId="consoles-list" />
-              <EquipmentListItem index={3} htmlId="consoles-list" />
-              <EquipmentListItem index={4} htmlId="consoles-list" />
+            <div className="hidden md:flex w-full justify-between max-w-[1920px]">
+              <div className="max-w-[320px]">
+                <EquipmentListItem index={0} htmlId="consoles-list" />
+                <EquipmentListItem index={1} htmlId="monitoring-list" />
+                <EquipmentListItem index={2} htmlId="tpi-studio-list" />
+                <EquipmentListItem index={3} htmlId="mic-pres-list" />
+                <EquipmentListItem index={4} htmlId="microphones-list" />
+              </div>
+
+              <div className="flex flex-col ">
+              <LargerEquipmentList index={5} />
+              <LargerEquipmentList index={6} />
+              </div>
             </div>
           </section>
         </div>

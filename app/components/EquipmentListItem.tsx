@@ -7,10 +7,12 @@ type EquipmentListItemProps = {
 
 export default function EquipmentListItem({ index, htmlId }: EquipmentListItemProps) {
   return (
-    <div id={htmlId}>
-      <h4>{equipmentCatagories[index].title}</h4>
+    <div className="flex flex-col gap-y-5 pb-[53px]" id={htmlId}>
+      <h4 className="text-grey-600 uppercase font-mono text-xs tracking-[0.13em] leading-mono-list-item">
+        {equipmentCatagories[index].title}
+      </h4>
       {equipmentCatagories && (
-        <ul>
+        <ul className="flex flex-col gap-y-5">
           {equipmentCatagories[index].items.map((item) => (
             <li key={item.title}>{item.title}</li>
           ))}

@@ -14,7 +14,6 @@ export default function EquipmentListM() {
       return [arrayColOne, arrayColTwo, arrayColThree];
     }
     const [arrayColOne, arrayColTwo, arrayColThree] = splitEquipmentListInHalf();
-    console.log(arrayColOne, arrayColTwo, arrayColThree)
 
   return (
     <div className="px-4 min-[1396px]:hidden">

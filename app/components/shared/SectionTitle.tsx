@@ -9,7 +9,7 @@ export default function SectionTitle({ title, label }:props) {
       <h3 className="display-hero">{title}</h3>
       <span
         aria-label="Section number"
-        className="mono-section-caption text-text-muted pt-1">
+        className="mono-section-caption text-muted pt-1">
         {label}
       </span>
     </div>

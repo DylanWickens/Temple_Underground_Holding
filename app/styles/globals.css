@@ -26,6 +26,7 @@ body {
   --color-black-900: #1a1a1a;
   --color-gray-600: #4f4f4f;
   --color-gray-400: #7e7e7e;
+  --color-gray-300: #959595;
   --color-gray-200: #9d9d9d;
   --color-white-100: #f1f1f1;
 
@@ -36,7 +37,12 @@ body {
   --color-text-primary: var(--color-white-100);
   --color-text-secondary: var(--color-gray-200);
   --color-text-muted: var(--color-gray-400);
+  --color-primary: var(--color-text-primary);
+  --color-secondary: var(--color-text-secondary);
+  --color-tertiary: var(--color-gray-300);
+  --color-muted: var(--color-text-muted);
   --color-text-inverted: var(--color-black-1000);
+  --color-inverted: var(--color-text-inverted);
   --color-border-default: var(--color-gray-600);
   --color-border-subtle: var(--color-black-900);
 

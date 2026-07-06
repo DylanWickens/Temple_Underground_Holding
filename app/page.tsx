@@ -43,7 +43,7 @@ export default function Home() {
               <h3 className="display-lg">
                 Temple is a residential studio and creative retreat set within a historic
                 30-acre property in Woodbury, CT.{" "}
-                <span className="text-text-secondary w-full">
+                <span className="text-secondary w-full">
                   Built for recording, writing, performance and strange hours, it offers
                   artists space, privacy, serious rooms, deep gear and the rare ability to
                   stay inside the work.
@@ -84,7 +84,7 @@ export default function Home() {
                     <h3 className="display-lg">
                       Temple is a residential studio and creative retreat set within a
                       historic 30-acre property in Woodbury, CT.{" "}
-                      <span className="text-text-secondary w-full">
+                      <span className="text-secondary w-full">
                         Built for recording, writing, performance and strange hours, it
                         offers artists space, privacy, serious rooms, deep gear and the
                         rare ability to stay inside the work.
@@ -98,6 +98,7 @@ export default function Home() {
           <section className="md:max-w-[1440px] md:px-16 justify-center items-center  w-full">
             <div className="pb-32">
               <SectionTitle title="Equipment" label="002"></SectionTitle>
+              <a download={null} className="text-muted">Full list available on request</a>
             </div>
 
             <div className="hidden md:flex w-full justify-between max-w-[1920px]">
@@ -109,9 +110,9 @@ export default function Home() {
                 <EquipmentListItem index={4} htmlId="microphones-list" />
               </div>
 
-              <div className="flex flex-col ">
-              <LargerEquipmentList index={5} />
-              <LargerEquipmentList index={6} />
+              <div className="flex flex-col justify-between items-start">
+                <LargerEquipmentList index={5} />
+                <LargerEquipmentList index={6} />
               </div>
             </div>
           </section>

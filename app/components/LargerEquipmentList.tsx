@@ -19,21 +19,25 @@ export default function LargerEquipmentList({index}:LargerEquipmentListProps) {
 
   return (
     <div className="flex flex-col gap-x-5 pb-[53px]">
-      <h4 className="text-grey-600 uppercase font-mono text-xs tracking-[0.13em] leading-mono-list-item pb-5">
+      <h4 className="text-primary opacity-80 uppercase font-mono font-semibold text-xs tracking-[0.13em] leading-mono-list-item pb-5">
         {equipmentCatagories[index].title}
       </h4>
       <div className="flex gap-x-5">
         {splitArrayFirstHalf && (
-          <ul className="flex flex-col gap-y-5">
+          <ul className="flex flex-col flex-1 min-w-[424px] gap-y-5">
             {splitArrayFirstHalf.map((item) => (
-              <li key={item.title}>{item.title}</li>
+              <li key={item.title} className="text-muted">
+                {item.title}
+              </li>
             ))}
           </ul>
         )}
         {splitArrayLastHalf && (
-          <ul className="flex flex-col gap-y-5">
+          <ul className="flex flex-col flex-1 min-w-[424px] gap-y-5">
             {splitArrayLastHalf.map((item) => (
-              <li key={item.title}>{item.title}</li>
+              <li key={item.title} className="text-muted">
+                {item.title}
+              </li>
             ))}
           </ul>
         )}

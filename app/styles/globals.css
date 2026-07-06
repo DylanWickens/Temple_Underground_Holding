@@ -65,7 +65,7 @@ body {
   --text-mono-section-caption-D: 11px;
 
   --text-mono-img-caption-M: 11px;
-  --text-mono-img-caption-D: 9px;
+  --text-mono-img-caption-D: 12px;
 
   --text-mono-list-item: 16px;
 
@@ -91,7 +91,7 @@ body {
   --tracking-mono-section-caption-D: 0.08em;
 
   --tracking-mono-img-caption-M: 0.11em;
-  --tracking-mono-img-caption-D: 0.08em;
+  --tracking-mono-img-caption-D: 0.15em;
 
   --tracking-mono-list-item: 0.03em;
 
@@ -132,4 +132,22 @@ body {
   --radius-md: 0.5rem;
   --radius-lg: 1rem;
   --radius-full: 9999px;
+}
+
+@utility scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+html {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
 }

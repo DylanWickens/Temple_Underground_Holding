@@ -25,12 +25,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inferi.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${inferi.variable} ${geistMono.variable} h-full antialiased`}>
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/fuk3qsj.css" />
       </head>
 
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col scrollbar-hidden">{children}</body>
     </html>
   );
 }

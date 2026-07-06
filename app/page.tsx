@@ -1,19 +1,16 @@
-
-
 import Image from "next/image";
-
 import Navbar from "./components/shared/Navbar";
 import HeroCanvas from "./ThreeScenes/HeroScene/HeroCanvas";
-
+import EquipmentListItem from "./components/EquipmentListItem";
 
 
 export default function Home() {
+  
   return (
     <div>
-      <main>
+      <main className="overflow-x-hidden">
         <Navbar />
         <div className="flex flex-col justify-center items-center gap-y-section">
-
           {/* ThreeJS Scene */}
           <section id="hero" className="h-[110vh]">
             <div className="hero-stage relative w-screen h-[110vh] overflow-hidden">
@@ -33,19 +30,20 @@ export default function Home() {
             </div>
           </section>
 
+          {/* About Section */}
           <section
             id="about"
-            className="flex flex-col px-4 items-start gap-y-16 md:px-16 md:max-w-[1440px]">
-            <div className="flex gap-x-4 md:gap-x-6">
-              <h3 className="display-hero">About</h3>
-              <span
-                aria-label="Section number"
-                className="mono-label text-text-muted pt-1">
-                001
-              </span>
-            </div>
+            className="flex flex-col w-full px-4 justify-center items-center gap-y-16 md:px-16">
+            <div className="flex flex-col gap-y-section md:max-w-[1440px] pb-16 md:pb-24">
+              <div className="flex gap-x-4 md:gap-x-6">
+                <h3 className="display-hero">About</h3>
+                <span
+                  aria-label="Section number"
+                  className="mono-section-caption text-text-muted pt-1">
+                  001
+                </span>
+              </div>
 
-            <div className="flex flex-col gap-y-16 md:gap-y-24">
               <h3 className="display-lg">
                 Temple is a residential studio and creative retreat set within a historic
                 30-acre property in Woodbury, CT.{" "}
@@ -55,11 +53,12 @@ export default function Home() {
                   stay inside the work.
                 </span>
               </h3>
-
+            </div>
+            <div className="flex flex-col gap-y-16 w-full md:gap-y-24 md:max-w-[1920px]">
               <div
                 id="about-images"
-                className="flex flex-col gap-y-8 md:flex-row md:gap-x-[14px]">
-                <div className="flex flex-col justify-start items-start gap-y-4">
+                className="flex flex-col gap-y-8 md:flex-row md:items-start md:gap-x-[14px]">
+                <div className="flex min-w-0 flex-col justify-start items-start gap-y-4 md:flex-1">
                   <Image
                     className="w-full h-auto"
                     src="/images/about-01.png"
@@ -72,23 +71,44 @@ export default function Home() {
                   </figcaption>
                 </div>
 
-                <div className="flex flex-1 flex-col justify-start items-start gap-y-4">
-                  <Image
-                    className="w-full h-auto"
-                    src="/images/about-02.png"
-                    alt="Live room interior"
-                    width={361}
-                    height={448}
-                  />
-                  <figcaption className="mono-img-caption uppercase">
-                    LIVE ROOM
-                  </figcaption>
+                <div className="flex w-full min-w-0 flex-col gap-y-section-lg md:max-w-[1080px] md:grow md:shrink md:basis-[400px] lg:min-w-[400px]">
+                  <div className="flex flex-1 flex-col justify-start items-start gap-y-4">
+                    <Image
+                      className="w-full h-auto md:min-w-[400px] "
+                      src="/images/about-02.png"
+                      alt="Live room interior"
+                      width={361}
+                      height={448}
+                    />
+                    <figcaption className="mono-img-caption uppercase">
+                      LIVE ROOM
+                    </figcaption>
+                  </div>
+                  <div className="flex flex-col gap-y-section md:max-w-[1440px] pb-16 md:pb-24">
+                    <h3 className="display-lg">
+                      Temple is a residential studio and creative retreat set within a
+                      historic 30-acre property in Woodbury, CT.{" "}
+                      <span className="text-text-secondary w-full">
+                        Built for recording, writing, performance and strange hours, it
+                        offers artists space, privacy, serious rooms, deep gear and the
+                        rare ability to stay inside the work.
+                      </span>
+                    </h3>
+                  </div>
                 </div>
               </div>
             </div>
-          </section> 
+          </section>
 
-
+          <section className="hidden md:block">
+            <div>
+              <EquipmentListItem index={0} htmlId="consoles-list" />
+              <EquipmentListItem index={1} htmlId="consoles-list" />
+              <EquipmentListItem index={2} htmlId="consoles-list" />
+              <EquipmentListItem index={3} htmlId="consoles-list" />
+              <EquipmentListItem index={4} htmlId="consoles-list" />
+            </div>
+          </section>
         </div>
       </main>
     </div>

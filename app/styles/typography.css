@@ -79,18 +79,6 @@
 
 @utility nav {
     font-family: var(--font-sans);
-    font-size: var(--text-nav-M);
-    line-height: 150%;
-    letter-spacing: var(--tracking-nav-M);
-    
-    @variant md {
-        font-size: var(--text-nav-reg-D);
-        letter-spacing: var(--tracking-nav-D);
-    }
-}
-
-@utility nav {
-    font-family: var(--font-sans);
     font-size: var(--text-nav-reg-M);
     line-height: 130%;
     letter-spacing: var(--tracking-nav-M);

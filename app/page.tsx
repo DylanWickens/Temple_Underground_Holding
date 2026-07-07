@@ -5,7 +5,7 @@ import EquipmentListItem from "./components/EquipmentListItem";
 import SectionTitle from "./components/shared/SectionTitle";
 import LargerEquipmentList from "./components/LargerEquipmentList";
 import EquipmentListM from "./components/shared/EquipmentListM";
-import FooterCanvas from "./ThreeScenes/FooterScene/FooterCanvas"
+import FooterCanvas from "./ThreeScenes/FooterScene/FooterCanvas";
 
 
 export default function Home() {
@@ -131,7 +131,7 @@ export default function Home() {
           {/* TO-DO: Team Section */}
           <section className="px-8 md:max-w-[1440px] md:px-16"></section>
           
-          <footer className="footer-canvas relative w-screen h-[60vh] overflow-hidden">
+          <footer className="footer-canvas relative w-screen h-[90vh] overflow-hidden">
             <FooterCanvas />
           </footer>
         </div>

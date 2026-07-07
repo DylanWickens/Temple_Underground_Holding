@@ -42,6 +42,14 @@ const DEBUG_DEFAULTS = {
   uSinFreq: 0.3,
 };
 
+function getDeterministicScale(index: number): number {
+  let hash = (index + 1) | 0;
+  hash ^= hash << 13;
+  hash ^= hash >>> 17;
+  hash ^= hash << 5;
+  return (hash >>> 0) / 4294967295;
+}
+
 export default function Wave() {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const debugObject = useRef({ ...DEBUG_DEFAULTS });
@@ -83,10 +91,10 @@ export default function Wave() {
     const geo = new THREE.PlaneGeometry(2, 6, 128, 128);
     const count = geo.getAttribute('position').count
 
-    // Create random scale for each point
+    // Create deterministic scale for each point
     const scales = new Float32Array(count);
     for(let i = 0; i < count; i++) {
-        scales[i] = Math.random();
+        scales[i] = getDeterministicScale(i);
     }
     geo.setAttribute('aScale', new THREE.BufferAttribute(scales, 1));
     return geo;

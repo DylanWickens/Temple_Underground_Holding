@@ -84,9 +84,9 @@ const ParticlesMaterial = shaderMaterial(
   {
     uSize: 10.0,
     uTime: 0,
-    uNoisePeriod: 3.8,
+    uNoisePeriod: 8,
     uNoiseSpeed: 0.08,
-    uNoiseStrength: 0.026,
+    uNoiseStrength: 0.032,
   },
   vertShader,
   fragShader,
@@ -102,9 +102,9 @@ declare module "@react-three/fiber" {
 // ─── Debug defaults ───────────────────────────────────────────────────────────
 
 const DEBUG_DEFAULTS = {
-  noiseAmp: 3.8,
+  noiseAmp: 8,
   noiseSpeed: 0.08,
-  noiseStrength: 0.026,
+  noiseStrength: 0.032,
 };
 
 type CameraDebug = {
@@ -122,11 +122,11 @@ function applyCameraSettings(camera: PerspectiveCamera, settings: CameraDebug) {
 }
 
 const CAMERA_DEFAULTS: CameraDebug = {
-  posX: 0.183952596664429,
-  posY: -0.686047403335571,
-  posZ: 0.0499525966644288,
-  rotX: -0.0015926535897929917,
-  rotY: 2.62840734641021,
+  posX: 0.163952596664429,
+  posY: -0.946047403335571,
+  posZ: 0.379952596664429,
+  rotX: -0.161592653589793,
+  rotY: 1.62840734641021,
   rotZ: 0.00840734641020699,
 };
 

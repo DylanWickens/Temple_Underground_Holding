@@ -15,7 +15,14 @@ function Box() {
 
 export default function HeroCanvas() {
   return (
-    <Canvas>
+    <Canvas
+      dpr={[1, 2]}
+      onCreated={({ gl }) => {
+        gl.setClearColor(0xff0000, 0);
+        gl.autoClear = false;
+        gl.clearDepth();
+      }}
+      gl={{ antialias: true, alpha: true }}>
       {/* <OrbitControls /> */}
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} />

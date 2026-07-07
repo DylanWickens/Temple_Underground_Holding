@@ -43,7 +43,7 @@ export default function FooterCanvas() {
       onCreated={({ gl, scene }) => {
         footerGlRef.current = gl;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 2.04;
+        gl.toneMappingExposure = 0.71;
         gl.setClearColor(0x000000, 0);
         scene.background = null;
       }}

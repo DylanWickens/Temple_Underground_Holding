@@ -17,7 +17,7 @@ const DEBUG_DEFAULTS = {
   bloomThreshold: 0,
   filmIntensity: 1,
   filmGrayscale: false,
-  exposure: 2.04,
+  exposure: 0.71,
 };
 
 type FilmPassUniforms = {

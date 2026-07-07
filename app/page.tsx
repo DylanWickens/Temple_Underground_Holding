@@ -5,7 +5,7 @@ import EquipmentListItem from "./components/EquipmentListItem";
 import SectionTitle from "./components/shared/SectionTitle";
 import LargerEquipmentList from "./components/LargerEquipmentList";
 import EquipmentListM from "./components/shared/EquipmentListM";
-
+import FooterCanvas from "./ThreeScenes/FooterScene/FooterCanvas";
 
 
 export default function Home() {
@@ -101,7 +101,7 @@ export default function Home() {
           <h1>TRHEE JS SCENE</h1>
 
           <section className="md:max-w-[1440px] sm:px-16 justify-center items-center  w-full pt-128">
-            <div className="flex justify-between gap-y-4 pb-24 px-4 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
+            <div className="flex justify-between gap-y-4 pb-24 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
               <SectionTitle title="Equipment" label="002"></SectionTitle>
               <a
                 download={null}
@@ -128,8 +128,12 @@ export default function Home() {
             {/* Mobile */}
             <EquipmentListM />
           </section>
-
+          {/* TO-DO: Team Section */}
           <section className="px-8 md:max-w-[1440px] md:px-16"></section>
+          
+          <footer className="footer-canvas relative w-screen h-[90vh] overflow-hidden">
+            <FooterCanvas />
+          </footer>
         </div>
       </main>
     </div>

@@ -101,7 +101,7 @@ export default function Home() {
           <h1>TRHEE JS SCENE</h1>
 
           <section className="md:max-w-[1440px] sm:px-16 justify-center items-center  w-full pt-128">
-            <div className="flex justify-between gap-y-4 pb-24 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
+            <div className="flex flex-col justify-between px-4 gap-y-8 pb-24 md:px-0 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
               <SectionTitle title="Equipment" label="002"></SectionTitle>
               <a
                 download={null}
@@ -132,7 +132,7 @@ export default function Home() {
           <section className="px-8 md:max-w-[1440px] md:px-16"></section>
           
           <footer className="footer-canvas relative w-screen h-[90vh] overflow-hidden">
-            <FooterCanvas />
+            {/* <FooterCanvas /> */}
           </footer>
         </div>
       </main>

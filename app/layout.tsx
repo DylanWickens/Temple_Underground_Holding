@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import Inferi from 'next/font/local';
 import "./styles/globals.css";
+import LenisProvider from "./components/shared/LenisProvider";
 
 
 const geistMono = Geist_Mono({
@@ -32,7 +33,11 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://use.typekit.net/fuk3qsj.css" />
       </head>
 
-      <body className="min-h-full flex flex-col scrollbar-hidden">{children}</body>
+      <body className="min-h-full flex flex-col scrollbar-hidden">
+        <LenisProvider>
+          {children}
+        </LenisProvider>
+      </body>
     </html>
   );
 }

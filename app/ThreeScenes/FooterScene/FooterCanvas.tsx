@@ -1,17 +1,20 @@
 "use client";
 
+// Footer 3D canvas — render order: camera offset → point cloud → post-processing.
+// Scene-wide defaults live in footerSceneDefaults.ts.
+
 import { Suspense, useEffect } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { PerspectiveCamera } from "@react-three/drei";
-import PointCloud from "./PointCoud";
+import PointCloud from "./PointCloud";
 import PostProcessing from "./PostProcessing";
 import { footerGlRef } from "./footerGlRef";
-
-// Shift capture window so the model anchors near the bottom while canvas stays full height.
-const FOOTER_COMPOSITION_OFFSET_Y_RATIO = 0.16;
-// Preserve top headroom so upward-moving particles are less likely to clip.
-const FOOTER_PARTICLE_HEADROOM_Y_RATIO = 0.06;
+import {
+  FOOTER_COMPOSITION_OFFSET_Y_RATIO,
+  FOOTER_PARTICLE_HEADROOM_Y_RATIO,
+  RENDERER_EXPOSURE,
+} from "./footerSceneDefaults";
 
 function FooterViewOffset() {
   const { camera, size } = useThree();
@@ -43,7 +46,7 @@ export default function FooterCanvas() {
       onCreated={({ gl, scene }) => {
         footerGlRef.current = gl;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 0.71;
+        gl.toneMappingExposure = RENDERER_EXPOSURE;
         gl.setClearColor(0x000000, 0);
         scene.background = null;
       }}

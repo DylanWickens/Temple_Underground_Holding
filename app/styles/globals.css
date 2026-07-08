@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./typography.css";
+@import 'lenis/dist/lenis.css';
 
 :root {
   --background: var(--color-background-primary);
@@ -169,3 +170,4 @@ html::-webkit-scrollbar {
   color: #171717;
   text-shadow: none;
 }
+

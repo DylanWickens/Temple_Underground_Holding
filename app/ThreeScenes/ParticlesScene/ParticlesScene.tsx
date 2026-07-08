@@ -27,7 +27,7 @@ export default function ParticlesScene() {
 
   return (
     <Canvas
-      alphaTest={true}
+
       dpr={[1, 2]}
       onCreated={({ gl }) => {
         gl.setClearColor(0xff0000, 0);

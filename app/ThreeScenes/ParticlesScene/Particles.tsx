@@ -123,10 +123,10 @@ const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
         <particlesShader
           ref={materialRef}
           uTime={0}
-          uSize={250}
-          uNoisePeriod={0.2}
-          uNoiseStrength={3}
-          uNoiseSpeed={1}
+          uSize={125}
+          uNoisePeriod={1}
+          uNoiseStrength={30}
+          uNoiseSpeed={10}
           transparent
           depthWrite={false}
          

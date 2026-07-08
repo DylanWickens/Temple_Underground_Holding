@@ -35,7 +35,7 @@ export default function EquipmentListM() {
   const threeColumns = splitEquipmentList(3);
 
   return (
-    <div className="px-4 min-[1396px]:hidden">
+    <div className="px-4 md:px-16 min-[1396px]:hidden">
       <h4 className="text-primary opacity-80 uppercase font-mono font-semibold text-xs tracking-[0.13em] leading-mono-list-item pb-8">
         Our Favourites
       </h4>

@@ -6,6 +6,7 @@ import SectionTitle from "./components/shared/SectionTitle";
 import LargerEquipmentList from "./components/LargerEquipmentList";
 import EquipmentListM from "./components/shared/EquipmentListM";
 import FooterCanvas from "./ThreeScenes/FooterScene/FooterCanvas";
+import ParticlesScene from "./ThreeScenes/ParticlesScene/ParticlesScene";
 
 
 export default function Home() {
@@ -100,28 +101,40 @@ export default function Home() {
 
           <h1>TRHEE JS SCENE</h1>
 
-          <section className="md:max-w-[1440px] sm:px-16 justify-center items-center  w-full pt-128">
-            <div className="flex flex-col justify-between px-4 gap-y-8 pb-24 md:px-0 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
-              <SectionTitle title="Equipment" label="002"></SectionTitle>
-              <a
-                download={null}
-                className="text-muted hover:text-secondary transition-colors 120ms ease-in-out cursor-pointer select-none text-nowrap">
-                Full list available on request
-              </a>
-            </div>
-            {/* Desktop */}
-            <div className="hidden min-[1396px]:flex w-full justify-between max-w-[1920px]">
-              <div className="max-w-[400px]">
-                <EquipmentListItem index={0} htmlId="consoles-list" />
-                <EquipmentListItem index={1} htmlId="monitoring-list" />
-                <EquipmentListItem index={2} htmlId="tpi-studio-list" />
-                <EquipmentListItem index={3} htmlId="mic-pres-list" />
-                <EquipmentListItem index={4} htmlId="microphones-list" />
-              </div>
+          <section className="justify-center items-center  w-full pt-128">
+            <Image
+              className="w-screen h-auto max-w-none inset-0"
+              src="/images/three-covers/Equipment-Place-Holder.png"
+              width={1440}
+              height={1036}
+              alt="OP-XY Model"
+              loading="lazy"
+            />
+            <div className="flex flex-col items-center justify-start w-full">
+              <div className="w-full max-w-[1920px] px-4 md:px-16">
+                <div className="flex flex-col items-start gap-y-8 pb-24 md:flex-row md:pb-32 sm:gap-x-32 xl:gap-x-150 w-full">
+                  <SectionTitle title="Equipment" label="002"></SectionTitle>
+                  <a
+                    download={null}
+                    className="text-muted hover:text-secondary transition-colors 120ms ease-in-out cursor-pointer select-none text-nowrap">
+                    Full list available on request
+                  </a>
+                </div>
+                {/* Desktop */}
+                <div className="hidden min-[1396px]:flex w-full justify-start gap-x-32 xl:gap-x-142">
+                  <div className="max-w-[400px]">
+                    <EquipmentListItem index={0} htmlId="consoles-list" />
+                    <EquipmentListItem index={1} htmlId="monitoring-list" />
+                    <EquipmentListItem index={2} htmlId="tpi-studio-list" />
+                    <EquipmentListItem index={3} htmlId="mic-pres-list" />
+                    <EquipmentListItem index={4} htmlId="microphones-list" />
+                  </div>
 
-              <div className="flex flex-col justify-between items-start">
-                <LargerEquipmentList index={5} />
-                <LargerEquipmentList index={6} />
+                  <div className="flex flex-col justify-between items-start">
+                    <LargerEquipmentList index={5} />
+                    <LargerEquipmentList index={6} />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -130,9 +143,10 @@ export default function Home() {
           </section>
           {/* TO-DO: Team Section */}
           <section className="px-8 md:max-w-[1440px] md:px-16"></section>
-          
-          <footer className="footer-canvas relative w-screen h-[90vh] overflow-hidden">
+
+          <footer className="footer-canvas relative w-screen h-[90vh] -mt-380 overflow-hidden">
             {/* <FooterCanvas /> */}
+            <ParticlesScene />
           </footer>
         </div>
       </main>

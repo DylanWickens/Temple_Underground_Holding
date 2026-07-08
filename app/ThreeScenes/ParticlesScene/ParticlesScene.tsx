@@ -5,6 +5,8 @@ import { Canvas, useThree } from "@react-three/fiber";
 import Particles from "./Particles"
 import { PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
+import { Perf } from "r3f-perf"; 
+
 
 export default function ParticlesScene() {
   // Camera
@@ -25,6 +27,7 @@ export default function ParticlesScene() {
 
   return (
     <Canvas
+      alphaTest={true}
       dpr={[1, 2]}
       onCreated={({ gl }) => {
         gl.setClearColor(0xff0000, 0);
@@ -33,9 +36,7 @@ export default function ParticlesScene() {
       }}
       gl={{ antialias: true, alpha: true }}>
       {/* <OrbitControls /> */}
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} />
-
+      <Perf position="top-left" />
       <PerspectiveCamera makeDefault position={cameraSettings.position} />
       <CameraLookAt target={cameraSettings.target} />
       <Particles />

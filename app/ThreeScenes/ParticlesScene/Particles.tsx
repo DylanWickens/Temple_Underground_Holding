@@ -5,7 +5,10 @@ import * as THREE from 'three';
 import { extend, type ThreeElement, useThree, useFrame } from "@react-three/fiber";
 import { useGLTF, OrbitControls } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, Children } from 'react';
+import { Bloom, EffectComposer, ToneMapping, Noise } from "@react-three/postprocessing";
+import { ToneMappingMode } from 'postprocessing';
+import { BlendFunction } from "postprocessing";
 
 
 import vertexShader from './shaders/vert.glsl';
@@ -16,11 +19,17 @@ import fragmentShader from "./shaders/frag.glsl";
 type Uniforms = {
   uTime: number;
   uSize: number;
-}
+  uNoisePeriod: number;
+  uNoiseSpeed: number;
+  uNoiseStrength: number;
+};
 
 const DEFAULT_UNIFORMS: Uniforms = { 
   uTime: 0,
   uSize: 10,
+  uNoisePeriod: 1,
+  uNoiseSpeed: 1,
+  uNoiseStrength: 1,
 }
 
 const ParticlesShader = shaderMaterial(
@@ -38,6 +47,8 @@ declare module "@react-three/fiber" {
 
 
 export default function Particles() {
+
+const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
 
   //DEBUG 
   const controlsRef = useRef<OrbitControlsImpl>(null);
@@ -93,21 +104,32 @@ export default function Particles() {
 
 
   // Animate
-  useFrame((state, delta) => {
-    // console.log(delta);
-    
-    // Update Shaders
+  useFrame((state) => {
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+    }
   });
   
 
   return (
     <>
+      <EffectComposer>
+        <Bloom luminanceThreshold={0} luminanceSmoothing={0.6} height={300} />
+        <Noise opacity={0.3} blendFunction={BlendFunction.OVERLAY} />
+        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      </EffectComposer>
+
       <points geometry={pointsGeometry}>
         <particlesShader
+          ref={materialRef}
           uTime={0}
-          uSize={300}
+          uSize={250}
+          uNoisePeriod={0.2}
+          uNoiseStrength={3}
+          uNoiseSpeed={1}
           transparent
           depthWrite={false}
+         
           blending={THREE.AdditiveBlending}
         />
       </points>

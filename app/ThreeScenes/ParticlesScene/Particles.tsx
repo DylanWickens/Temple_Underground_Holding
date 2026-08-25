@@ -73,7 +73,7 @@ const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
       
 
   // Save geometry to the cache
-  const { nodes } = useGLTF('./models/Expanded.gltf');
+  const { nodes } = useGLTF("/models/Expanded.gltf");
 
   const landscape = nodes.Landscape as THREE.Mesh;  
   const sourceGeometry = landscape.geometry;
@@ -93,16 +93,6 @@ const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
     return geo;
 }, [sourceGeometry]);
 
-
-  // Calculate aScale
-  const count = landscape.geometry.attributes.position.count;
-  const scales = new Float32Array(count);
-
-  for(let i = 0; i < count; i++) {
-    scales[i] = Math.random();
-  }
-
-
   // Animate
   useFrame((state) => {
     if (materialRef.current) {
@@ -110,11 +100,10 @@ const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
     }
   });
   
-
   return (
     <>
-      <EffectComposer>
-        <Bloom luminanceThreshold={0} luminanceSmoothing={0.6} height={300} />
+      <EffectComposer multisampling={0}>
+        <Bloom luminanceThreshold={0} luminanceSmoothing={0.6} intensity={1} />
         <Noise opacity={0.3} blendFunction={BlendFunction.OVERLAY} />
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       </EffectComposer>
@@ -123,13 +112,12 @@ const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
         <particlesShader
           ref={materialRef}
           uTime={0}
-          uSize={125}
+          uSize={175}
           uNoisePeriod={1}
-          uNoiseStrength={30}
-          uNoiseSpeed={10}
+          uNoiseStrength={3}
+          uNoiseSpeed={0.4}
           transparent
           depthWrite={false}
-         
           blending={THREE.AdditiveBlending}
         />
       </points>

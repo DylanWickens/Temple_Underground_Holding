@@ -7,6 +7,7 @@ import LargerEquipmentList from "./components/LargerEquipmentList";
 import EquipmentListM from "./components/shared/EquipmentListM";
 import FooterCanvas from "./ThreeScenes/FooterScene/FooterCanvas";
 import ParticlesScene from "./ThreeScenes/ParticlesScene/ParticlesScene";
+import MobileAccordian from "./components/shared/MobileAccordian";
 
 
 export default function Home() {
@@ -106,7 +107,7 @@ export default function Home() {
               <SectionTitle title="Equipment" label="002"></SectionTitle>
               <a
                 download={null}
-                className="text-muted hover:text-secondary transition-colors 120ms ease-in-out cursor-pointer select-none text-nowrap">
+                className="hidden s:block text-muted hover:text-secondary transition-colors 120ms ease-in-out cursor-pointer select-none text-nowrap">
                 Full list available on request
               </a>
             </div>
@@ -127,7 +128,7 @@ export default function Home() {
             </div>
 
             {/* Mobile */}
-            <EquipmentListM />
+           <MobileAccordian />
           </section>
           {/* TO-DO: Team Section */}
           <section className="px-8 md:max-w-[1440px] md:px-16"></section>
@@ -141,3 +142,4 @@ export default function Home() {
     </div>
   );
 }
+

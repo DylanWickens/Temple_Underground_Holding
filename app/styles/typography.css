@@ -106,3 +106,11 @@
         letter-spacing: var(--tracking-body-sm-D);
     }
 }
+
+@utility accordian-title {
+    leading-trim: both;
+    text-edge: cap;
+    font-size: 2rem;
+    line-height: 120%;
+    letter-spacing: -0.01em;
+}

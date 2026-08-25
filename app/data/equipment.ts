@@ -15,7 +15,7 @@ export type FavoriteItem = {
 export const equipmentCatagories: EquipmentCatagory[] = [
   {
     id: "consoles",
-    title: "CONSOLES",
+    title: "Consoles",
     items: [
       { title: "Avid S6 M40 16-5-D" },
       { title: "Trident 32 Channel" },
@@ -48,7 +48,7 @@ export const equipmentCatagories: EquipmentCatagory[] = [
   },
   {
     id: "mic-pres-equalization",
-    title: "Mic PRE's / Equalization",
+    title: "Mic Pre / Equalization",
     items: [
       { title: "Audio Kitchen Stereo Squirrel" },
       { title: "Audio Kitchen Stereo Trees" },
@@ -59,7 +59,7 @@ export const equipmentCatagories: EquipmentCatagory[] = [
   },
   {
     id: "microphones",
-    title: "MICROPHONES",
+    title: "Microphones",
     items: [
       { title: "Audio Technica AT822 *2" },
       { title: "Audio Technica AT-8022 *2" },
@@ -80,7 +80,7 @@ export const equipmentCatagories: EquipmentCatagory[] = [
   },
   {
     id: "instruments",
-    title: "INSTRUMENTS",
+    title: "Instruments",
     items: [
       { title: "Arturia Microfreak" },
       { title: "Arturia MatrixBrute" },

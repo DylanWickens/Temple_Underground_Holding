@@ -47,6 +47,9 @@ export default function ParticlesScene() {
     <div ref={wrapRef} className="absolute inset-0">
       {shouldMount ? (
         <Canvas
+          // R3F hard-codes `pointerEvents: "auto"` inline on its wrapper div, which would
+          // override the pointer-events class on our container. `inherit` hands control back.
+          style={{ pointerEvents: "inherit" }}
           frameloop={inView ? "always" : "never"}
           dpr={[1, 1.5]}
           onCreated={({ gl }) => {
@@ -54,7 +57,8 @@ export default function ParticlesScene() {
           }}
           gl={{ antialias: true, alpha: true }}>
           {/* <OrbitControls /> */}
-          <Perf position="top-left" />
+          {/* Frame monitor */}
+          {/* <Perf position="top-left" /> */}
           <PerspectiveCamera makeDefault position={cameraSettings.position} />
           <CameraLookAt target={cameraSettings.target} />
           <Suspense fallback={null}>

@@ -108,9 +108,15 @@
 }
 
 @utility accordian-title {
-    leading-trim: both;
-    text-edge: cap;
+    font-family: var(--font-sans);
     font-size: 2rem;
-    line-height: 120%;
-    letter-spacing: -0.01em;
+    line-height: 1.2;
+    letter-spacing: -0.05em;
+}
+
+@utility accordian-item {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    line-height: 20px;
+    letter-spacing: 0.03em;
 }

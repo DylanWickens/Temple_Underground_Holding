@@ -128,12 +128,14 @@ export default function Home() {
             </div>
 
             {/* Mobile */}
-           <MobileAccordian />
+            <div className="block min-[1396px]:hidden">
+              <MobileAccordian />
+            </div>
           </section>
           {/* TO-DO: Team Section */}
           <section className="px-8 md:max-w-[1440px] md:px-16"></section>
 
-          <footer className="footer-canvas relative w-screen h-[90vh] -mt-[50vh] overflow-hidden">
+          <footer className="footer-canvas relative w-screen h-[90vh] mt-[-50vh] overflow-hidden pointer-events-none min-[1396px]:pointer-events-auto">
             {/* <FooterCanvas /> */}
             <ParticlesScene />
           </footer>

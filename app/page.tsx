@@ -9,6 +9,7 @@ import FooterCanvas from "./ThreeScenes/FooterScene/FooterCanvas";
 import ParticlesScene from "./ThreeScenes/ParticlesScene/ParticlesScene";
 
 import MobileAccordian from "./components/shared/MobileAccordian";
+import EquipmentScene from "./ThreeScenes/EquipmentScene/EquipmentScene";
 
 
 export default function Home() {
@@ -103,11 +104,10 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Equipment. This wrapper is the pin's container: the canvas inside
-              EquipmentScene sticks for the whole of it, so the model tumbles as
-              you scroll the spacer, then holds its resting pose behind the list
-              while the list scrolls up over it. */}
           <div className="relative flex w-full flex-col items-center">
+            <div className="hidden md:block md:absolute md:inset-x-0 md:top-0 md:-translate-y-16">
+              <EquipmentScene />
+            </div>
 
             <section className="relative z-10 md:max-w-360 sm:px-16 justify-center items-center  w-full pt-128">
               <div className="flex flex-col justify-between px-4 gap-y-8 pb-24 md:px-0 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">

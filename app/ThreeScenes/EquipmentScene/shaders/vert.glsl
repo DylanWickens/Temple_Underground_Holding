@@ -25,4 +25,8 @@ void main () {
     // Pointsize
     gl_PointSize = uSize * aScale;
     gl_PointSize *= aScale / -viewPosition.z ;
+
+    // Sub-pixel points flicker and drop out; most GPUs also cap the upper bound,
+    // so clamp explicitly rather than letting the driver decide.
+    gl_PointSize = clamp(gl_PointSize, 1.0, 64.0);
 }

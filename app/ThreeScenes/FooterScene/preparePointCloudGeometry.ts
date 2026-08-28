@@ -45,7 +45,7 @@ function rotatePositions(
   return rotated;
 }
 
-function preparePositions(positions: Float32Array): Float32Array {
+export function preparePositions(positions: Float32Array): Float32Array {
   const rotated = rotatePositions(positions, "x", -Math.PI / 2);
   return getCenteredPositions(rotated);
 }

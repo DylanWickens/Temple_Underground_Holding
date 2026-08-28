@@ -7,6 +7,7 @@ import LargerEquipmentList from "./components/LargerEquipmentList";
 import EquipmentListM from "./components/shared/EquipmentListM";
 import FooterCanvas from "./ThreeScenes/FooterScene/FooterCanvas";
 import ParticlesScene from "./ThreeScenes/ParticlesScene/ParticlesScene";
+
 import MobileAccordian from "./components/shared/MobileAccordian";
 
 
@@ -14,7 +15,9 @@ export default function Home() {
 
   return (
     <div>
-      <main className="overflow-x-hidden">
+      {/* overflow-x-clip, not hidden: `hidden` forces overflow-y:auto, which makes
+          main a scroll container and stops position:sticky pinning inside it. */}
+      <main className="overflow-x-clip">
         <Navbar />
         <div className="flex flex-col justify-center items-center gap-y-section">
           {/* ThreeJS Scene */}
@@ -40,7 +43,7 @@ export default function Home() {
           <section
             id="about"
             className="flex flex-col w-full px-4 justify-center items-center gap-y-16 md:px-16">
-            <div className="flex flex-col gap-y-section md:max-w-[1440px] pb-16 md:pb-24">
+            <div className="flex flex-col gap-y-section md:max-w-360 pb-16 md:pb-24">
               <SectionTitle title="About" label="001"></SectionTitle>
 
               <h3 className="display-lg">
@@ -56,7 +59,7 @@ export default function Home() {
             <div className="flex flex-col gap-y-16 w-full md:gap-y-24 md:max-w-[1920px]">
               <div
                 id="about-images"
-                className="flex flex-col gap-y-8 md:flex-row md:items-start md:gap-x-[14px]">
+                className="flex flex-col gap-y-8 md:flex-row md:items-start md:gap-x-3.5">
                 <div className="flex min-w-0 flex-col justify-start items-start gap-y-4 md:flex-1">
                   <Image
                     className="w-full h-auto"
@@ -70,10 +73,10 @@ export default function Home() {
                   </figcaption>
                 </div>
 
-                <div className="flex w-full min-w-0 flex-col gap-y-section-lg md:max-w-[1080px] md:grow md:shrink md:basis-[400px] lg:min-w-[400px]">
+                <div className="flex w-full min-w-0 flex-col gap-y-section-lg md:max-w-270 md:grow md:shrink md:basis-100 lg:min-w-100">
                   <div className="flex flex-1 flex-col justify-start items-start gap-y-4">
                     <Image
-                      className="w-full h-auto md:min-w-[400px] "
+                      className="w-full h-auto md:min-w-100 "
                       src="/images/about-02.png"
                       alt="Live room interior"
                       width={361}
@@ -84,7 +87,7 @@ export default function Home() {
                       LIVE ROOM
                     </figcaption>
                   </div>
-                  <div className="flex flex-col gap-y-section md:max-w-[1440px] pb-16 md:pb-24">
+                  <div className="flex flex-col gap-y-section md:max-w-360 pb-16 md:pb-24">
                     <h3 className="display-lg">
                       Temple is a residential studio and creative retreat set within a
                       historic 30-acre property in Woodbury, CT.{" "}
@@ -100,40 +103,45 @@ export default function Home() {
             </div>
           </section>
 
-          <h1>TRHEE JS SCENE</h1>
+          {/* Equipment. This wrapper is the pin's container: the canvas inside
+              EquipmentScene sticks for the whole of it, so the model tumbles as
+              you scroll the spacer, then holds its resting pose behind the list
+              while the list scrolls up over it. */}
+          <div className="relative flex w-full flex-col items-center">
 
-          <section className="md:max-w-[1440px] sm:px-16 justify-center items-center  w-full pt-128">
-            <div className="flex flex-col justify-between px-4 gap-y-8 pb-24 md:px-0 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
-              <SectionTitle title="Equipment" label="002"></SectionTitle>
-              <a
-                download={null}
-                className="hidden s:block text-muted hover:text-secondary transition-colors 120ms ease-in-out cursor-pointer select-none text-nowrap">
-                Full list available on request
-              </a>
-            </div>
-            {/* Desktop */}
-            <div className="hidden min-[1396px]:flex w-full justify-between max-w-[1920px]">
-              <div className="max-w-[400px]">
-                <EquipmentListItem index={0} htmlId="consoles-list" />
-                <EquipmentListItem index={1} htmlId="monitoring-list" />
-                <EquipmentListItem index={2} htmlId="tpi-studio-list" />
-                <EquipmentListItem index={3} htmlId="mic-pres-list" />
-                <EquipmentListItem index={4} htmlId="microphones-list" />
+            <section className="relative z-10 md:max-w-360 sm:px-16 justify-center items-center  w-full pt-128">
+              <div className="flex flex-col justify-between px-4 gap-y-8 pb-24 md:px-0 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
+                <SectionTitle title="Equipment" label="002"></SectionTitle>
+                <a
+                  download={null}
+                  className="hidden s:block text-muted hover:text-secondary transition-colors 120ms ease-in-out cursor-pointer select-none text-nowrap">
+                  Full list available on request
+                </a>
+              </div>
+              {/* Desktop */}
+              <div className="hidden min-[1396px]:flex w-full justify-between max-w-[1920px]">
+                <div className="max-w-100">
+                  <EquipmentListItem index={0} htmlId="consoles-list" />
+                  <EquipmentListItem index={1} htmlId="monitoring-list" />
+                  <EquipmentListItem index={2} htmlId="tpi-studio-list" />
+                  <EquipmentListItem index={3} htmlId="mic-pres-list" />
+                  <EquipmentListItem index={4} htmlId="microphones-list" />
+                </div>
+
+                <div className="flex flex-col justify-between items-start">
+                  <LargerEquipmentList index={5} />
+                  <LargerEquipmentList index={6} />
+                </div>
               </div>
 
-              <div className="flex flex-col justify-between items-start">
-                <LargerEquipmentList index={5} />
-                <LargerEquipmentList index={6} />
+              {/* Mobile */}
+              <div className="block min-[1396px]:hidden">
+                <MobileAccordian />
               </div>
-            </div>
-
-            {/* Mobile */}
-            <div className="block min-[1396px]:hidden">
-              <MobileAccordian />
-            </div>
-          </section>
+            </section>
+          </div>
           {/* TO-DO: Team Section */}
-          <section className="px-8 md:max-w-[1440px] md:px-16"></section>
+          <section className="px-8 md:max-w-360 md:px-16"></section>
 
           <footer className="footer-canvas relative w-screen h-[90vh] mt-[-50vh] overflow-hidden pointer-events-none min-[1396px]:pointer-events-auto">
             {/* <FooterCanvas /> */}

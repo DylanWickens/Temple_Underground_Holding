@@ -4,8 +4,6 @@ import HeroCanvas from "./ThreeScenes/HeroScene/HeroCanvas";
 import EquipmentListItem from "./components/EquipmentListItem";
 import SectionTitle from "./components/shared/SectionTitle";
 import LargerEquipmentList from "./components/LargerEquipmentList";
-import EquipmentListM from "./components/shared/EquipmentListM";
-import FooterCanvas from "./ThreeScenes/FooterScene/FooterCanvas";
 import ParticlesScene from "./ThreeScenes/ParticlesScene/ParticlesScene";
 
 import MobileAccordian from "./components/shared/MobileAccordian";
@@ -90,12 +88,12 @@ export default function Home() {
                   </div>
                   <div className="flex flex-col gap-y-section md:max-w-360 pb-16 md:pb-24">
                     <h3 className="display-lg">
-                      Temple is a residential studio and creative retreat set within a
-                      historic 30-acre property in Woodbury, CT.{" "}
+                      The estate combines residential comfort with professional recording
+                      spaces, live rooms, instruments, outboard, synths, and production
+                      support.{" "}
                       <span className="text-secondary w-full">
-                        Built for recording, writing, performance and strange hours, it
-                        offers artists space, privacy, serious rooms, deep gear and the
-                        rare ability to stay inside the work.
+                        It is designed for artists, producers, composers and collaborators
+                        who need time, focus and atmosphere, not just a room by the hour.
                       </span>
                     </h3>
                   </div>
@@ -109,8 +107,8 @@ export default function Home() {
               <EquipmentScene />
             </div>
 
-            <section className="relative z-10 md:max-w-360 sm:px-16 justify-center items-center  w-full pt-128">
-              <div className="flex flex-col justify-between px-4 gap-y-8 pb-24 md:px-0 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
+            <section className="relative z-10 md:max-w-360 sm:px-16 justify-center items-center  w-full pt-16 md:pt-64 xl:pt-128">
+              <div className="flex flex-col justify-between px-4 gap-y-8 pb-8 md:px-0 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
                 <SectionTitle title="Equipment" label="002"></SectionTitle>
                 <a
                   download={null}

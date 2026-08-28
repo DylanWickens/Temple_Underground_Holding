@@ -45,7 +45,7 @@ export default function Row({ id, title, items, isOpen, onToggle }: RowProps) {
     <div className="flex flex-col w-full" ref={rowRef}>
       <div
         className={clsx(
-          "flex justify-between items-center self-stretch border-b border-current transition-colors duration-300",
+          "flex justify-between items-center self-stretch border-b border-current transition-colors duration-300 hover:text-white-100",
           isOpen ? "text-white-100" : "text-white-100/30",
         )}>
         <button

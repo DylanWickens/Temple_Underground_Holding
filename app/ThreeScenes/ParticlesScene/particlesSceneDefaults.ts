@@ -181,6 +181,11 @@ export type LiftStopValues = {
   scatter: number;
   /** Point-size multiplier at full lift: size *= 1 + falloff * sizeScale. */
   sizeScale: number;
+  /**
+   * NDC y where points start fading toward the top of the canvas (1.0 = edge).
+   * Hides the hard clip line where lifted points leave the overflow-hidden footer.
+   */
+  edgeFadeStart: number;
   /** Per-second lerp rate toward the target on the way up. Lower = lazier. */
   riseSmoothing: number;
   /** Blend from a linear (0) to a smoothstep (1) response over the accumulated gesture. */
@@ -211,6 +216,7 @@ const LIFT_SHARED = {
   variance: 0.32,
   scatter: 0.17,
   sizeScale: 0.61,
+  edgeFadeStart: 0.55,
   riseSmoothing: 3.5,
   riseCurve: 1,
   idleMs: 150,

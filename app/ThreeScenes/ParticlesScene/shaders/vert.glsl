@@ -18,10 +18,13 @@ uniform float uLiftFade;
 uniform float uLiftVariance;
 uniform float uLiftScatter;
 uniform float uLiftSize;
+// NDC y where the top-edge fade starts; fully transparent at the canvas edge (1.0).
+uniform float uEdgeFadeStart;
 
 attribute float aScale;
 
 varying float vGlow;
+varying float vEdgeFade;
 
 void main() {
 
@@ -62,6 +65,10 @@ void main() {
     vec4 projectedPosition = projectionMatrix * viewPosition;
     
     gl_Position = projectedPosition;
+
+    // The footer canvas is overflow-hidden, so lifted points would otherwise be
+    // cut off in a hard line at its top edge. Dissolve them before they get there.
+    vEdgeFade = 1.0 - smoothstep(uEdgeFadeStart, 1.0, projectedPosition.y / projectedPosition.w);
 
     // Pointsize
     // Lifted particles grow with the lift; uLiftSize is already scaled by progress.

@@ -191,6 +191,7 @@ export function setupScrollLiftDevGui(gui: GUI, getWidth: () => number) {
 
   const look = gui.addFolder("Look");
   look.add(LIFT, "glow", 0, 0.5, 0.005).name("Glow (all widths)");
+  look.add(LIFT, "edgeFadeStart", -1, 1, 0.01).name("Top fade start (ndc y)");
   look.add(LIFT, "debugLift", 0, 600, 1).name("Hold lift (0 = off)");
 
   // Responsive fields take over width tracking when touched and mirror resizes

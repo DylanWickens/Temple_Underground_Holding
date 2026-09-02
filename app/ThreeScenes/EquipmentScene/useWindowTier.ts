@@ -7,10 +7,11 @@
 import { useEffect, useState } from "react";
 import { type Tier, TIER_MAX_WIDTH, tierForWidth } from "./equipmentSceneDefaults";
 
-export function useWindowTier(): Tier {
-  // Desktop on the server and for the first paint; corrected on mount before the
-  // canvas has produced a frame worth looking at.
-  const [tier, setTier] = useState<Tier>("desktop");
+export function useWindowTier(): Tier | null {
+  // null on the server and for the first client render: callers must not mount a
+  // canvas until the width has actually been measured, or a phone would create a
+  // context and start the model download for one render before being corrected.
+  const [tier, setTier] = useState<Tier | null>(null);
 
   useEffect(() => {
     const queries = [

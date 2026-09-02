@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Navbar from "./components/shared/Navbar";
-import HeroCanvas from "./ThreeScenes/HeroScene/HeroCanvas";
 import EquipmentListItem from "./components/EquipmentListItem";
 import SectionTitle from "./components/shared/SectionTitle";
 import LargerEquipmentList from "./components/LargerEquipmentList";

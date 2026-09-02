@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import {
   Canvas,
   extend,
@@ -31,8 +31,14 @@ import {
 } from "./equipmentSceneDefaults";
 import { buildEquipmentGeometry } from "./prepareEquipmentGeometry";
 import { useWindowTier } from "./useWindowTier";
+import { useSceneActivation } from "../shared/useSceneActivation";
 
 const DEBUG = process.env.NODE_ENV === "development";
+
+// Binary, positions-only conversion of PLY-OP-1.ply: the same 183,970 vertices in
+// the same order at ~2 MB instead of 19 MB of ASCII with normals, uvs and faces
+// that nothing here reads.
+const MODEL_URL = "/models/opxy.ply";
 
 const EquipmentParticlesShader = shaderMaterial(
   {
@@ -55,8 +61,8 @@ declare module "@react-three/fiber" {
 
 function EquipmentParticles() {
   const materialRef = useRef<InstanceType<typeof EquipmentParticlesShader>>(null);
-  const raw = useLoader(PLYLoader, "/models/PLY-OP-1.ply");
-  const { viewport, size } = useThree();
+  const raw = useLoader(PLYLoader, MODEL_URL);
+  const { viewport, size, gl, scene, camera, advance } = useThree();
 
   const tier = tierForWidth(size.width);
   const { vertexStride } = TIER_QUALITY[tier];
@@ -91,6 +97,24 @@ function EquipmentParticles() {
     };
   }, [viewport.height, viewport.dpr, size.width, size.height, maxDim]);
 
+  // Warm-up while still off-screen: compile the material in parallel, then render
+  // one frame through PostProcessing so the composer's targets are allocated and
+  // its passes compiled. frameloop is "never" until in view, so this is the only
+  // frame until then.
+  useEffect(() => {
+    let cancelled = false;
+    gl.compileAsync(scene, camera)
+      .then(() => {
+        if (!cancelled) advance(performance.now());
+      })
+      .catch(() => {
+        // A failed parallel compile just means the first visible frame compiles.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gl, scene, camera, advance, geometry]);
+
   useFrame((state) => {
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
@@ -120,39 +144,56 @@ function EquipmentParticles() {
 
 export default function EquipmentScene() {
   const tier = useWindowTier();
+  // Mounts in the first idle slot after paint; renders only while in view, so the
+  // bloom chain is not paid for while the user reads About or the footer.
+  const { ref, shouldMount, inView } = useSceneActivation<HTMLDivElement>();
+
+  // The wrapper in page.tsx is `hidden md:block`; mirror that here so a phone never
+  // creates the context or downloads the model. null = not measured yet (SSR and
+  // first client render), which must not fall through to the desktop path.
+  const canvasTier = tier !== null && tier !== "mobile" ? tier : null;
+
+  // Start the model download at page mount, ahead of the canvas.
+  useEffect(() => {
+    if (!canvasTier) return;
+    useLoader.preload(PLYLoader, MODEL_URL);
+  }, [canvasTier]);
 
   return (
     // 100svh, not 100vh: the small-viewport unit ignores the mobile URL bar, so the
     // canvas box stops changing as it hides and the resize storm goes away.
     // w-full, not w-screen: 100vw includes the scrollbar and overflows.
-    <div className="w-full h-svh pointer-events-none">
-      <Canvas
-        dpr={[1, TIER_QUALITY[tier].maxDpr]}
-        // Debounced so a drag-resize does not reallocate the post-processing
-        // render targets on every frame.
-        resize={{ debounce: { resize: 150, scroll: 50 } }}
-        // Pointless with post-processing: the composer renders to its own target,
-        // so canvas MSAA never applies — it just costs memory and fill rate.
-        gl={{ antialias: false, alpha: true }}
-        onCreated={({ gl }) => {
-          gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = RENDERER_EXPOSURE;
-          gl.setClearColor(0x000000, 0);
-        }}>
-        <PerspectiveCamera
-          makeDefault
-          fov={CAMERA.fov}
-          near={CAMERA.near}
-          far={CAMERA.far}
-          position={CAMERA.position as unknown as [number, number, number]}
-        />
+    <div ref={ref} className="w-full h-svh pointer-events-none">
+      {shouldMount && canvasTier ? (
+        <Canvas
+          dpr={[1, TIER_QUALITY[canvasTier].maxDpr]}
+          frameloop={inView ? "always" : "never"}
+          // Debounced so a drag-resize does not reallocate the post-processing
+          // render targets on every frame.
+          resize={{ debounce: { resize: 150, scroll: 50 } }}
+          // Pointless with post-processing: the composer renders to its own target,
+          // so canvas MSAA never applies — it just costs memory and fill rate.
+          gl={{ antialias: false, alpha: true }}
+          onCreated={({ gl }) => {
+            gl.toneMapping = THREE.ACESFilmicToneMapping;
+            gl.toneMappingExposure = RENDERER_EXPOSURE;
+            gl.setClearColor(0x000000, 0);
+          }}>
+          <PerspectiveCamera
+            makeDefault
+            fov={CAMERA.fov}
+            near={CAMERA.near}
+            far={CAMERA.far}
+            position={CAMERA.position as unknown as [number, number, number]}
+          />
 
-        <Suspense fallback={null}>
-          <EquipmentParticles />
-        </Suspense>
-        <PostProcessing />
-        {DEBUG && <Perf />}
-      </Canvas>
+          <Suspense fallback={null}>
+            <EquipmentParticles />
+          </Suspense>
+          <PostProcessing />
+          {DEBUG && <Perf />}
+        </Canvas>
+      ) : null}
     </div>
   );
 }

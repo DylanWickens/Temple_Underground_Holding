@@ -40,6 +40,7 @@ type Uniforms = {
   uLiftVariance: number;
   uLiftScatter: number;
   uLiftSize: number;
+  uEdgeFadeStart: number;
 };
 
 const DEFAULT_UNIFORMS: Uniforms = {
@@ -58,6 +59,7 @@ const DEFAULT_UNIFORMS: Uniforms = {
   uLiftVariance: LIFT.variance,
   uLiftScatter: LIFT.scatter,
   uLiftSize: 0,
+  uEdgeFadeStart: LIFT.edgeFadeStart,
 }
 
 const ParticlesShader = shaderMaterial(
@@ -153,6 +155,7 @@ export default function Particles({ lift }: ParticlesProps) {
     material.uniforms.uLiftFade.value = LIFT.nearFade;
     material.uniforms.uLiftVariance.value = LIFT.variance;
     material.uniforms.uLiftScatter.value = LIFT.scatter;
+    material.uniforms.uEdgeFadeStart.value = LIFT.edgeFadeStart;
   });
   
   return (

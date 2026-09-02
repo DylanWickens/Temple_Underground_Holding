@@ -22,7 +22,7 @@ export default function Home() {
           {/* ThreeJS Scene */}
           <section id="hero" className="h-[110vh]">
             <div className="hero-stage relative w-screen h-[110vh] overflow-hidden">
-              <HeroCanvas />
+              {/* <HeroCanvas /> */}
 
               <div className="hero-logo absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
                 <svg

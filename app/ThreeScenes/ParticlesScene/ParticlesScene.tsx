@@ -3,14 +3,24 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { PerspectiveCamera } from "@react-three/drei";
+import { useLenis } from "lenis/react";
+import gsap from "gsap";
 import Particles from "./Particles";
 import ResponsiveCamera from "./ResponsiveCamera";
-import { CAMERA_CLIPPING } from "./particlesSceneDefaults";
+import { CAMERA_CLIPPING, LIFT, type LiftState } from "./particlesSceneDefaults";
 
 export default function ParticlesScene() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [shouldMount, setShouldMount] = useState(false);
   const [inView, setInView] = useState(false);
+
+  // Lenis lives here, outside <Canvas>: R3F renders into its own React root, so
+  // the Lenis context does not reach components inside the canvas.
+  const lenis = useLenis();
+  // A stable mutable object, not a state value: it changes on every wheel tick
+  // and is read in useFrame, so its mutations must never re-render the Canvas.
+  // useState only pins the identity across renders.
+  const [lift] = useState<LiftState>(() => ({ value: 0 }));
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -27,6 +37,40 @@ export default function ParticlesScene() {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!lenis || !inView) return;
+
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const scheduleReturn = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        gsap.to(lift, {
+          value: 0,
+          duration: LIFT.returnDuration,
+          ease: LIFT.returnEase,
+        });
+      }, LIFT.idleMs);
+    };
+
+    // virtual-scroll fires on the raw wheel/touch gesture even once Lenis is
+    // clamped at its limit, which is what keeps this working past the end of the
+    // document. Lenis normalises both input types to positive deltaY = scroll down.
+    const off = lenis.on("virtual-scroll", ({ deltaY }) => {
+      gsap.killTweensOf(lift);
+      const gain = LIFT.maxLift / Math.max(LIFT.effortPx, 1);
+      lift.value = Math.min(Math.max(lift.value + deltaY * gain, 0), LIFT.maxLift);
+      scheduleReturn();
+    });
+
+    return () => {
+      off();
+      clearTimeout(idleTimer);
+      gsap.killTweensOf(lift);
+      lift.value = 0;
+    };
+  }, [lenis, inView, lift]);
 
   return (
     <div ref={wrapRef} className="absolute inset-0">
@@ -53,7 +97,7 @@ export default function ParticlesScene() {
           />
           <ResponsiveCamera />
           <Suspense fallback={null}>
-            <Particles />
+            <Particles lift={lift} />
           </Suspense>
         </Canvas>
       ) : null}

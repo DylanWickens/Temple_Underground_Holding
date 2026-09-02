@@ -15,7 +15,12 @@ import {
   resolveStops,
   tierForWidth,
 } from "./equipmentSceneDefaults";
-import { DEV_GUI_ORDER, registerDevGui, unregisterDevGui } from "../shared/devGui/devGuiStack";
+import {
+  DEV_GUI_ORDER,
+  SHOW_DEV_GUI,
+  registerDevGui,
+  unregisterDevGui,
+} from "../shared/devGui/devGuiStack";
 
 const DEBUG = process.env.NODE_ENV === "development";
 
@@ -126,7 +131,7 @@ export default function PostProcessing() {
   // DEBUG — dev-only tuning GUI. Stripped from production builds.
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!DEBUG) return;
+    if (!DEBUG || !SHOW_DEV_GUI) return;
 
     let gui: import("lil-gui").GUI | undefined;
     let cancelled = false;

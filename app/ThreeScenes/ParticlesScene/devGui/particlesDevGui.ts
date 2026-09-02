@@ -8,7 +8,12 @@ import {
   CAMERA_POSITION_MARGIN,
   CAMERA_SLIDER_STEP,
   FRAMING,
+  LIFT,
+  LIFT_STOPS,
+  LIFT_TRACKING,
   NOISE_DEFAULTS,
+  RETURN_EASES,
+  applyLiftStops,
   PARTICLES,
   applyCameraFraming,
   resolveParticleSize,
@@ -126,4 +131,82 @@ export function setupParticlesDevGui({
   refresh();
 
   return { refresh };
+}
+
+/**
+ * Standalone panel for the scroll-driven lift. Every field is read live (in
+ * useFrame, or when the gesture handler / return tween fires), so no onChange
+ * plumbing is needed beyond switching off width tracking: once a slider is
+ * touched, resizes stop overwriting the tweak until "Re-enable" is pressed.
+ * Sliders `.listen()` so they show the interpolated values while tracking.
+ */
+export function setupScrollLiftDevGui(gui: GUI, getWidth: () => number) {
+  const readout = { width: 0, tracking: "" };
+  const refreshReadout = () => {
+    readout.width = Math.round(getWidth());
+    readout.tracking = LIFT_TRACKING.enabled ? "tracking width" : "GUI override";
+  };
+  const takeOver = () => {
+    LIFT_TRACKING.enabled = false;
+    refreshReadout();
+  };
+
+  gui.add(readout, "width").name("Canvas width").listen().disable();
+  gui.add(readout, "tracking").name("Mode").listen().disable();
+  gui
+    .add(
+      {
+        reset: () => {
+          LIFT_TRACKING.enabled = true;
+          applyLiftStops(getWidth());
+          refreshReadout();
+        },
+      },
+      "reset",
+    )
+    .name("Re-enable width tracking");
+
+  const gesture = gui.addFolder("Gesture");
+  gesture.add(LIFT, "effortPx", 200, 20000, 50).name("Scroll effort (px to max)");
+  gesture.add(LIFT, "riseSmoothing", 0.5, 30, 0.25).name("Rise velocity");
+  gesture.add(LIFT, "riseCurve", 0, 1, 0.01).name("Rise curve (0 linear → 1 smooth)");
+
+  const fall = gui.addFolder("Return");
+  fall.add(LIFT, "idleMs", 0, 3000, 10).name("Air time before fall (ms)");
+  fall.add(LIFT, "returnDuration", 0.1, 6, 0.05).name("Fall duration (s)");
+  fall.add(LIFT, "returnEase", [...RETURN_EASES]).name("Fall ease");
+
+  const shape = gui.addFolder("Shape");
+  shape.add(LIFT, "maxLift", 0, 600, 1).name("Magnitude (world units)");
+  shape.add(LIFT, "radiusX", 0.05, 2, 0.01).name("Width (ndc)");
+  shape.add(LIFT, "radiusY", 0.05, 8, 0.01).name("Height (ndc)");
+  shape.add(LIFT, "power", 0.25, 6, 0.05).name("Falloff");
+  shape.add(LIFT, "variance", 0, 1, 0.01).name("Height variance");
+  shape.add(LIFT, "scatter", 0, 1.5, 0.01).name("Scatter");
+  shape.add(LIFT, "sizeScale", 0, 4, 0.01).name("Lifted size scale");
+  shape.add(LIFT, "centerX", -1, 1, 0.01).name("Centre X (ndc)");
+  shape.add(LIFT, "centerY", -1, 1, 0.01).name("Centre Y (ndc)");
+  shape.add(LIFT, "nearDistance", 0, 400, 1).name("Near distance");
+  shape.add(LIFT, "nearFade", 1, 200, 1).name("Near fade");
+
+  const look = gui.addFolder("Look");
+  look.add(LIFT, "glow", 0, 0.5, 0.005).name("Glow (all widths)");
+  look.add(LIFT, "debugLift", 0, 600, 1).name("Hold lift (0 = off)");
+
+  // Responsive fields take over width tracking when touched and mirror resizes
+  // while tracking. glow / debugLift / returnEase sit outside the stop table.
+  const stopKeys = new Set(Object.keys(LIFT_STOPS[0].value));
+  gui.controllersRecursive().forEach((controller) => {
+    if (!stopKeys.has(controller.property)) return;
+    controller.onChange(takeOver).listen();
+  });
+
+  // Logged in stop form so a tuned width can be pasted straight into LIFT_STOPS.
+  addLogButton(gui, "Lift stop", () => ({
+    width: Math.round(getWidth()),
+    value: Object.fromEntries([...stopKeys].map((key) => [key, LIFT[key as keyof typeof LIFT]])),
+    glow: LIFT.glow,
+  }));
+
+  refreshReadout();
 }

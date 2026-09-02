@@ -19,6 +19,7 @@
 // Nothing in the production path writes to them.
 
 import type { PerspectiveCamera } from "three";
+import { resolveStops, type Stop } from "../EquipmentScene/equipmentSceneDefaults";
 
 // ---------------------------------------------------------------------------
 // Camera
@@ -145,3 +146,132 @@ export function resolveParticleSize(height: number, dpr: number, fov: number): n
 
   return PARTICLES.size * dpr * heightFactor * fovFactor;
 }
+
+// ---------------------------------------------------------------------------
+// Scroll lift
+// ---------------------------------------------------------------------------
+
+/**
+ * Accumulated scroll gesture, in world units of Y lift. Owned by ParticlesScene,
+ * mutated by the Lenis virtual-scroll handler and the GSAP return tween, read by
+ * Particles inside useFrame. Deliberately a plain mutable object rather than
+ * React state: it changes on every wheel tick.
+ */
+export type LiftState = { value: number };
+
+/** The width-responsive subset of LIFT. Numeric only, so every field can be lerped. */
+export type LiftStopValues = {
+  /** Y displacement, in world units, at the centre of the falloff. */
+  maxLift: number;
+  /** Pixels of scroll gesture needed to reach maxLift. Higher = more effort. */
+  effortPx: number;
+  /** View-space distance before the lift starts, and the ramp width after it. */
+  nearDistance: number;
+  nearFade: number;
+  /** Falloff ellipse in NDC, so the band tracks the viewport centre at any aspect. */
+  centerX: number;
+  centerY: number;
+  radiusX: number;
+  radiusY: number;
+  /** Exponent on the smoothstep falloff. >1 tightens the peak, <1 flattens it. */
+  power: number;
+  /** Per-particle height variance, as a fraction of the lift, keyed off aScale. */
+  variance: number;
+  /** Lateral drift, as a fraction of each particle's lift, driven by the animated noise. */
+  scatter: number;
+  /** Point-size multiplier at full lift: size *= 1 + falloff * sizeScale. */
+  sizeScale: number;
+  /** Per-second lerp rate toward the target on the way up. Lower = lazier. */
+  riseSmoothing: number;
+  /** Blend from a linear (0) to a smoothstep (1) response over the accumulated gesture. */
+  riseCurve: number;
+  /** Gesture quiet time before the return tween starts. */
+  idleMs: number;
+  /** Seconds for the return to zero. */
+  returnDuration: number;
+};
+
+export type LiftSettings = LiftStopValues & {
+  /** GSAP ease name for the return. Options in RETURN_EASES. */
+  returnEase: string;
+  /** Fragment brightness boost at full lift. Held constant across widths on purpose. */
+  glow: number;
+  /** Dev GUI only. When > 0 it overrides the gesture so the look can be tuned without scrolling. */
+  debugLift: number;
+};
+
+// Fields that read the same at every width.
+const LIFT_SHARED = {
+  nearDistance: 125,
+  nearFade: 107,
+  centerX: 0,
+  centerY: -0.02,
+  radiusY: 7.8,
+  power: 0.75,
+  variance: 0.32,
+  scatter: 0.17,
+  sizeScale: 0.61,
+  riseSmoothing: 3.5,
+  riseCurve: 1,
+  idleMs: 150,
+  returnDuration: 1.2,
+};
+
+/**
+ * Linearly interpolated by canvas width, same scheme as the equipment scene.
+ *
+ * Only the 3840 stop is hand-tuned. The others are scaled from it as starting
+ * points: effortPx tracks screen height (a phone has far fewer scroll pixels per
+ * gesture than a 4K monitor), radiusX widens as the aspect narrows so the band
+ * still covers a useful slice of terrain in portrait, and maxLift eases off on
+ * small screens where the band is narrower in world units.
+ */
+export const LIFT_STOPS: Stop<LiftStopValues>[] = [
+  { width: 390, value: { ...LIFT_SHARED, maxLift: 90, effortPx: 1200, radiusX: 0.9 } },
+  { width: 768, value: { ...LIFT_SHARED, maxLift: 100, effortPx: 1600, radiusX: 0.8 } },
+  { width: 1280, value: { ...LIFT_SHARED, maxLift: 110, effortPx: 2200, radiusX: 0.7 } },
+  { width: 2560, value: { ...LIFT_SHARED, maxLift: 120, effortPx: 3200, radiusX: 0.65 } },
+  { width: 3840, value: { ...LIFT_SHARED, maxLift: 120, effortPx: 4000, radiusX: 0.63 } },
+];
+
+/** Width tracking. The dev GUI switches it off the moment a lift slider is touched. */
+export const LIFT_TRACKING = { enabled: true };
+
+/**
+ * Live values the shader, the gesture handler and the dev GUI all read. Mutated
+ * in place by applyLiftStops on resize and by the GUI.
+ */
+export const LIFT: LiftSettings = {
+  ...resolveStops(LIFT_STOPS, REFERENCE_VIEWPORT.width),
+  returnEase: "power2.inOut",
+  glow: 0.1,
+  debugLift: 0,
+};
+
+/** Re-solves the responsive fields for `width`, unless the GUI has taken over. */
+export function applyLiftStops(width: number) {
+  if (!LIFT_TRACKING.enabled) return;
+  Object.assign(LIFT, resolveStops(LIFT_STOPS, width));
+}
+
+/** GSAP eases offered by the dev GUI for the return-to-zero tween. */
+export const RETURN_EASES = [
+  "none",
+  "power1.inOut",
+  "power2.inOut",
+  "power3.inOut",
+  "power4.inOut",
+  "sine.inOut",
+  "expo.inOut",
+  "circ.inOut",
+  "power1.out",
+  "power2.out",
+  "power3.out",
+  "power4.out",
+  "sine.out",
+  "expo.out",
+  "circ.out",
+  "back.out(1.7)",
+  "elastic.out(1, 0.4)",
+  "bounce.out",
+] as const;

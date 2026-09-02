@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import type { GUI } from "lil-gui";
-import { registerDevGui, unregisterDevGui } from "./devGuiStack";
+import { registerDevGui, SHOW_DEV_GUI, unregisterDevGui } from "./devGuiStack";
 
 type UseDevGuiPanelOptions = {
   title: string;
@@ -14,7 +14,7 @@ type UseDevGuiPanelOptions = {
 
 export function useDevGuiPanel({ title, order, setup, deps = [] }: UseDevGuiPanelOptions) {
   useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
+    if (process.env.NODE_ENV !== "development" || !SHOW_DEV_GUI) return;
 
     let gui: GUI | undefined;
     let cancelled = false;

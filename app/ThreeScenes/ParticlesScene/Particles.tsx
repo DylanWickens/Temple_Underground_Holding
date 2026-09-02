@@ -4,7 +4,7 @@ import { shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 import { extend, type ThreeElement, useThree, useFrame } from "@react-three/fiber";
 import { useGLTF } from '@react-three/drei';
-import { useRef, useMemo, useLayoutEffect } from 'react';
+import { useRef, useMemo, useLayoutEffect, useEffect } from 'react';
 import { Bloom, EffectComposer, ToneMapping, Noise } from "@react-three/postprocessing";
 import { ToneMappingMode } from 'postprocessing';
 import { BlendFunction } from "postprocessing";
@@ -78,19 +78,24 @@ declare module "@react-three/fiber" {
 type ParticlesProps = {
   /** Scroll-gesture lift target, owned and mutated by ParticlesScene. */
   lift: LiftState;
+  /** Same URL ParticlesScene preloads, so the fetch is already in flight or cached. */
+  modelUrl: string;
 };
 
-export default function Particles({ lift }: ParticlesProps) {
+export default function Particles({ lift, modelUrl }: ParticlesProps) {
   const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
   const smoothedLift = useRef(0);
 
   const camera = useThree((state) => state.camera);
+  const gl = useThree((state) => state.gl);
+  const scene = useThree((state) => state.scene);
+  const advance = useThree((state) => state.advance);
   const width = useThree((state) => state.size.width);
   const height = useThree((state) => state.size.height);
   const dpr = useThree((state) => state.viewport.dpr);
 
   // Save geometry to the cache
-  const { nodes } = useGLTF("/models/Expanded.gltf");
+  const { nodes } = useGLTF(modelUrl);
 
   const landscape = nodes.Landscape as THREE.Mesh;  
   const sourceGeometry = landscape.geometry;
@@ -116,6 +121,24 @@ export default function Particles({ lift }: ParticlesProps) {
     () => resolveParticleSize(height, dpr, solveFov(width / height)),
     [width, height, dpr],
   );
+
+  // Warm-up while still off-screen: compile the material in parallel, then render
+  // one frame so the EffectComposer allocates its targets and compiles its passes.
+  // frameloop is "never" until the footer is in view, so this is the only frame
+  // until then, and the first visible frame is a plain render.
+  useEffect(() => {
+    let cancelled = false;
+    gl.compileAsync(scene, camera)
+      .then(() => {
+        if (!cancelled) advance(performance.now());
+      })
+      .catch(() => {
+        // A failed parallel compile just means the first visible frame compiles.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gl, scene, camera, advance, pointsGeometry]);
 
   // Responsive lift values, interpolated between LIFT_STOPS by canvas width.
   useLayoutEffect(() => {

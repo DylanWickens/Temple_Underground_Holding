@@ -1,18 +1,29 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { PerspectiveCamera } from "@react-three/drei";
+import { PerspectiveCamera, useGLTF } from "@react-three/drei";
 import { useLenis } from "lenis/react";
 import gsap from "gsap";
 import Particles from "./Particles";
 import ResponsiveCamera from "./ResponsiveCamera";
 import { CAMERA_CLIPPING, LIFT, type LiftState } from "./particlesSceneDefaults";
+import { useSceneActivation } from "../shared/useSceneActivation";
+
+const MODEL_URL = "/models/Expanded.gltf";
 
 export default function ParticlesScene() {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [shouldMount, setShouldMount] = useState(false);
-  const [inView, setInView] = useState(false);
+  // Mounts in the first idle slot after paint so the context, model and shaders
+  // are ready before the footer scrolls into view; renders only while in view.
+  const { ref: wrapRef, shouldMount, inView } = useSceneActivation<HTMLDivElement>({
+    rootMargin: "50%",
+  });
+
+  // Start the model download at page mount, ahead of the canvas. In an effect,
+  // not module scope, so it never runs during SSR.
+  useEffect(() => {
+    useGLTF.preload(MODEL_URL);
+  }, []);
 
   // Lenis lives here, outside <Canvas>: R3F renders into its own React root, so
   // the Lenis context does not reach components inside the canvas.
@@ -21,22 +32,6 @@ export default function ParticlesScene() {
   // and is read in useFrame, so its mutations must never re-render the Canvas.
   // useState only pins the identity across renders.
   const [lift] = useState<LiftState>(() => ({ value: 0 }));
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setInView(entry.isIntersecting);
-        if (entry.isIntersecting) setShouldMount(true);
-      },
-      { rootMargin: "25%" },
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     if (!lenis || !inView) return;
@@ -97,7 +92,7 @@ export default function ParticlesScene() {
           />
           <ResponsiveCamera />
           <Suspense fallback={null}>
-            <Particles lift={lift} />
+            <Particles lift={lift} modelUrl={MODEL_URL} />
           </Suspense>
         </Canvas>
       ) : null}

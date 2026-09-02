@@ -80,7 +80,7 @@ export type Composition = {
   offsetYRatio: number;
 };
 
-type Stop<T> = { width: number; value: T };
+export type Stop<T> = { width: number; value: T };
 
 export const COMPOSITION_STOPS: Stop<Composition>[] = [
   { width: 390, value: { coverage: 1.3, offsetXRatio: 0, offsetYRatio: 0.04 } },

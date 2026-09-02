@@ -4,7 +4,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 import type { PerspectiveCamera, ShaderMaterial } from "three";
 import type { Camera } from "@react-three/fiber";
-import { setupParticlesDevGui } from "./particlesDevGui";
+import { setupParticlesDevGui, setupScrollLiftDevGui } from "./particlesDevGui";
 import { useDevGuiPanel } from "../../shared/devGui/useDevGuiPanel";
 import { DEV_GUI_ORDER } from "../../shared/devGui/devGuiStack";
 
@@ -43,6 +43,12 @@ export function useParticlesDevGui({
       });
       refreshRef.current = refresh;
     },
+  });
+
+  useDevGuiPanel({
+    title: "Scroll Lift",
+    order: DEV_GUI_ORDER.particlesScrollLift,
+    setup: (gui) => setupScrollLiftDevGui(gui, () => sizeRef.current.width),
   });
 
   // Keep the panel readouts honest after a resize.

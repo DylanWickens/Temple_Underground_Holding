@@ -1,5 +1,9 @@
 import type { GUI } from "lil-gui";
 
+// Flip to true to show the stacked lil-gui panels. Instrumentation in each
+// scene (framing, particle size, post stops) keeps running either way.
+export const SHOW_DEV_GUI = false;
+
 const GAP = 10;
 const RIGHT = 15;
 const TOP = 10;
@@ -9,6 +13,7 @@ const TOP = 10;
 export const DEV_GUI_ORDER = {
   equipmentPostProcessing: 0,
   particlesFraming: 10,
+  particlesScrollLift: 15,
   footerPointCloud: 20,
   footerPostProcessing: 30,
 } as const;

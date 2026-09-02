@@ -151,6 +151,9 @@ body {
 }
 
 html {
+  /* The footer particles react to scroll gestures past the end of the document;
+     the browser rubber-band / pull-to-refresh would fight that. */
+  overscroll-behavior-y: none;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }

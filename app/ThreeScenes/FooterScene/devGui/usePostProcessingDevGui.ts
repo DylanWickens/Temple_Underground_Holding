@@ -6,7 +6,8 @@ import type { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPas
 import type { FilmPass } from "three/addons/postprocessing/FilmPass.js";
 import type { PostProcessingSettings } from "../footerSceneDefaults";
 import { setupPostProcessingDevGui } from "./postProcessingDevGui";
-import { useDevGuiPanel } from "./useDevGuiPanel";
+import { useDevGuiPanel } from "../../shared/devGui/useDevGuiPanel";
+import { DEV_GUI_ORDER } from "../../shared/devGui/devGuiStack";
 
 type UsePostProcessingDevGuiOptions = {
   bloomRef: MutableRefObject<UnrealBloomPass | null>;
@@ -21,7 +22,7 @@ export function usePostProcessingDevGui({
 }: UsePostProcessingDevGuiOptions) {
   useDevGuiPanel({
     title: "Post Processing",
-    order: 1,
+    order: DEV_GUI_ORDER.footerPostProcessing,
     setup: (gui) => {
       setupPostProcessingDevGui({
         gui,

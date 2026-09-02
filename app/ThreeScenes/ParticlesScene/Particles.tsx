@@ -1,16 +1,21 @@
 'use client';
 
-import { Points, shaderMaterial } from '@react-three/drei';
+import { shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 import { extend, type ThreeElement, useThree, useFrame } from "@react-three/fiber";
-import { useGLTF, OrbitControls } from '@react-three/drei';
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { useRef, useMemo, Children } from 'react';
+import { useGLTF } from '@react-three/drei';
+import { useRef, useMemo } from 'react';
 import { Bloom, EffectComposer, ToneMapping, Noise } from "@react-three/postprocessing";
 import { ToneMappingMode } from 'postprocessing';
 import { BlendFunction } from "postprocessing";
 
-
+import {
+  NOISE_DEFAULTS,
+  PARTICLES,
+  resolveParticleSize,
+  solveFov,
+} from "./particlesSceneDefaults";
+import { useParticlesDevGui } from "./devGui/useParticlesDevGui";
 import vertexShader from './shaders/vert.glsl';
 import fragmentShader from "./shaders/frag.glsl";
 
@@ -24,12 +29,12 @@ type Uniforms = {
   uNoiseStrength: number;
 };
 
-const DEFAULT_UNIFORMS: Uniforms = { 
+const DEFAULT_UNIFORMS: Uniforms = {
   uTime: 0,
-  uSize: 10,
-  uNoisePeriod: 1,
-  uNoiseSpeed: 1,
-  uNoiseStrength: 1,
+  uSize: PARTICLES.size,
+  uNoisePeriod: NOISE_DEFAULTS.noisePeriod,
+  uNoiseSpeed: NOISE_DEFAULTS.noiseSpeed,
+  uNoiseStrength: NOISE_DEFAULTS.noiseStrength,
 }
 
 const ParticlesShader = shaderMaterial(
@@ -47,30 +52,12 @@ declare module "@react-three/fiber" {
 
 
 export default function Particles() {
+  const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
 
-const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
-
-  //DEBUG 
-  const controlsRef = useRef<OrbitControlsImpl>(null);
-  const { camera } = useThree();
-        
-  /* <OrbitControls
-        ref={controlsRef}
-        onEnd={() => {
-          const target = controlsRef.current?.target;
-          console.log(
-            JSON.stringify(
-              {
-                position: camera.position.toArray().map((n) => +n.toFixed(4)),
-                target: target?.toArray().map((n:any) => +n.toFixed(4)),
-              },
-              null,
-              2,
-            ),
-          );
-        }}
-      /> */
-      
+  const camera = useThree((state) => state.camera);
+  const width = useThree((state) => state.size.width);
+  const height = useThree((state) => state.size.height);
+  const dpr = useThree((state) => state.viewport.dpr);
 
   // Save geometry to the cache
   const { nodes } = useGLTF("/models/Expanded.gltf");
@@ -93,6 +80,15 @@ const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
     return geo;
 }, [sourceGeometry]);
 
+  // Height is the term that matters: gl_PointSize is in device pixels, so without
+  // this the points hold their absolute size while the frame shrinks around them.
+  const pointSize = useMemo(
+    () => resolveParticleSize(height, dpr, solveFov(width / height)),
+    [width, height, dpr],
+  );
+
+  useParticlesDevGui({ materialRef, camera, width, height, dpr });
+
   // Animate
   useFrame((state) => {
     if (materialRef.current) {
@@ -112,10 +108,10 @@ const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
         <particlesShader
           ref={materialRef}
           uTime={0}
-          uSize={175}
-          uNoisePeriod={1}
-          uNoiseStrength={3}
-          uNoiseSpeed={0.4}
+          uSize={pointSize}
+          uNoisePeriod={NOISE_DEFAULTS.noisePeriod}
+          uNoiseStrength={NOISE_DEFAULTS.noiseStrength}
+          uNoiseSpeed={NOISE_DEFAULTS.noiseSpeed}
           transparent
           depthWrite={false}
           blending={THREE.AdditiveBlending}

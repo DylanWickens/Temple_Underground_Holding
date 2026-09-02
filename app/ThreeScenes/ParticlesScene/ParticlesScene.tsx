@@ -1,31 +1,16 @@
 "use client";
 
-import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
-import Particles from "./Particles"
+import { Suspense, useEffect, useRef, useState } from "react";
+import { Canvas } from "@react-three/fiber";
 import { PerspectiveCamera } from "@react-three/drei";
-import { Perf } from "r3f-perf"; 
-
-function CameraLookAt({ target }: { target: [number, number, number] }) {
-  const camera = useThree((s) => s.camera);
-  useLayoutEffect(() => {
-    camera.lookAt(...target);
-    camera.updateProjectionMatrix();
-  }, [camera, target]);
-
-  return null;
-}
+import Particles from "./Particles";
+import ResponsiveCamera from "./ResponsiveCamera";
+import { CAMERA_CLIPPING } from "./particlesSceneDefaults";
 
 export default function ParticlesScene() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [shouldMount, setShouldMount] = useState(false);
   const [inView, setInView] = useState(false);
-
-  // Camera
-  const cameraSettings = {
-    position: [94.5233, 6.8569, -92.4471] as [number, number, number],
-    target: [6.629, 66.6245, -3.7087] as [number, number, number],
-  };
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -52,15 +37,21 @@ export default function ParticlesScene() {
           style={{ pointerEvents: "inherit" }}
           frameloop={inView ? "always" : "never"}
           dpr={[1, 1.5]}
+          // Debounced so a drag-resize does not reallocate the EffectComposer
+          // render targets on every frame.
+          resize={{ debounce: { resize: 150, scroll: 50 } }}
           onCreated={({ gl }) => {
             gl.setClearColor(0xff0000, 0);
           }}
           gl={{ antialias: true, alpha: true }}>
-          {/* <OrbitControls /> */}
-          {/* Frame monitor */}
-          {/* <Perf position="top-left" /> */}
-          <PerspectiveCamera makeDefault position={cameraSettings.position} />
-          <CameraLookAt target={cameraSettings.target} />
+          {/* No fov/position props: ResponsiveCamera owns the whole pose, so R3F
+              cannot re-assert a stale prop over the solved values. */}
+          <PerspectiveCamera
+            makeDefault
+            near={CAMERA_CLIPPING.near}
+            far={CAMERA_CLIPPING.far}
+          />
+          <ResponsiveCamera />
           <Suspense fallback={null}>
             <Particles />
           </Suspense>

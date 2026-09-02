@@ -15,7 +15,7 @@ import {
   type NoiseSettings,
   type SceneOffset,
 } from "../footerSceneDefaults";
-import { addLogButton } from "./devGuiHelpers";
+import { addLogButton } from "../../shared/devGui/devGuiHelpers";
 
 const CAMERA_SLIDER_CONFIG: Record<keyof CameraSettings, { margin: number; label: string }> = {
   posX: { margin: CAMERA_POSITION_MARGIN, label: "Position X" },

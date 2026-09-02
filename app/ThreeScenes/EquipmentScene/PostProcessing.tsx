@@ -15,6 +15,7 @@ import {
   resolveStops,
   tierForWidth,
 } from "./equipmentSceneDefaults";
+import { DEV_GUI_ORDER, registerDevGui, unregisterDevGui } from "../shared/devGui/devGuiStack";
 
 const DEBUG = process.env.NODE_ENV === "development";
 
@@ -132,7 +133,8 @@ export default function PostProcessing() {
 
     import("lil-gui").then(({ GUI }) => {
       if (cancelled) return;
-      gui = new GUI();
+      gui = new GUI({ title: "Equipment Scene" });
+      registerDevGui(gui, DEV_GUI_ORDER.equipmentPostProcessing);
       const postFolder = gui.addFolder("Post Processing");
 
       const updatePostProcessing = () => {
@@ -190,7 +192,10 @@ export default function PostProcessing() {
 
     return () => {
       cancelled = true;
-      gui?.destroy();
+      if (gui) {
+        unregisterDevGui(gui);
+        gui.destroy();
+      }
     };
   }, [gl]);
 

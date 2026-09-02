@@ -14,7 +14,8 @@ import {
   type SceneOffset,
 } from "../footerSceneDefaults";
 import { applyCameraSettings, setupPointCloudDevGui } from "./pointCloudDevGui";
-import { useDevGuiPanel } from "./useDevGuiPanel";
+import { useDevGuiPanel } from "../../shared/devGui/useDevGuiPanel";
+import { DEV_GUI_ORDER } from "../../shared/devGui/devGuiStack";
 
 type UsePointCloudDevGuiOptions = {
   materialRef: MutableRefObject<ShaderMaterial | null>;
@@ -40,7 +41,7 @@ export function usePointCloudDevGui({
 
   useDevGuiPanel({
     title: "Camera",
-    order: 0,
+    order: DEV_GUI_ORDER.footerPointCloud,
     deps: [pointsGeometry, camera],
     setup: (gui) => {
       setupPointCloudDevGui({

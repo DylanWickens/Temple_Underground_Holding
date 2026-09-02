@@ -1,4 +1,4 @@
-// Shared lil-gui helpers for footer scene dev panels.
+// Shared lil-gui helpers for scene dev panels.
 
 import type { GUI } from "lil-gui";
 

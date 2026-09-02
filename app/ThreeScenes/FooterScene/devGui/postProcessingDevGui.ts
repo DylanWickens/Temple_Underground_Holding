@@ -6,7 +6,7 @@ import type { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPas
 import type { FilmPass } from "three/addons/postprocessing/FilmPass.js";
 import type { PostProcessingSettings } from "../footerSceneDefaults";
 import { footerGlRef } from "../footerGlRef";
-import { addLogButton } from "./devGuiHelpers";
+import { addLogButton } from "../../shared/devGui/devGuiHelpers";
 
 type FilmPassUniforms = {
   intensity: { value: number };

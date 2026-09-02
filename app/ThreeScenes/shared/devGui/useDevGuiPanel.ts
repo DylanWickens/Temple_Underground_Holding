@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import type { GUI } from "lil-gui";
-import { registerDevGui, unregisterDevGui } from "../devGuiStack";
+import { registerDevGui, unregisterDevGui } from "./devGuiStack";
 
 type UseDevGuiPanelOptions = {
   title: string;

@@ -4,6 +4,15 @@ const GAP = 10;
 const RIGHT = 15;
 const TOP = 10;
 
+// Top-to-bottom order of the stacked panels. Every panel must register here so
+// the stack can lay them out without overlapping.
+export const DEV_GUI_ORDER = {
+  equipmentPostProcessing: 0,
+  particlesFraming: 10,
+  footerPointCloud: 20,
+  footerPostProcessing: 30,
+} as const;
+
 type StackEntry = {
   gui: GUI;
   order: number;

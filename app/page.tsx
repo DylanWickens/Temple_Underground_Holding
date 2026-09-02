@@ -107,7 +107,9 @@ export default function Home() {
               <EquipmentScene />
             </div>
 
-            <section className="relative z-10 md:max-w-360 sm:px-16 justify-center items-center  w-full pt-16 md:pt-64 xl:pt-128">
+            <section
+              id="equipment"
+              className="relative z-10 md:max-w-360 sm:px-16 justify-center items-center  w-full pt-16 md:pt-64 xl:pt-128">
               <div className="flex flex-col justify-between px-4 gap-y-8 pb-8 md:px-0 md:flex-row min-[1396px]:justify-normal md:pb-32 sm:gap-x-32 xl:gap-x-142 w-full">
                 <SectionTitle title="Equipment" label="002"></SectionTitle>
                 <a
@@ -139,9 +141,11 @@ export default function Home() {
             </section>
           </div>
           {/* TO-DO: Team Section */}
-          <section className="px-8 md:max-w-360 md:px-16"></section>
+          <section id="team" className="px-8 md:max-w-360 md:px-16"></section>
 
-          <footer className="footer-canvas relative w-screen h-[90vh] mt-[-50vh] overflow-hidden pointer-events-none min-[1396px]:pointer-events-auto">
+          <footer
+            id="book"
+            className="footer-canvas relative w-screen h-[90vh] mt-[-50vh] overflow-hidden pointer-events-none min-[1396px]:pointer-events-auto">
             {/* <FooterCanvas /> */}
             <ParticlesScene />
           </footer>

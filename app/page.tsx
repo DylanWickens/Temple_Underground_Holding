@@ -23,7 +23,9 @@ export default function Home() {
             <div className="hero-stage relative w-screen h-[110vh] overflow-hidden">
               {/* <HeroCanvas /> */}
 
-              <div className="hero-logo absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+              {/* Centred on the viewport, not the 110vh stage: inset-0 here would centre
+                  the logo at 55vh and leave it sitting 5vh below the fold's centre. */}
+              <div className="hero-logo absolute inset-x-0 top-0 h-screen z-10 flex items-center justify-center pointer-events-none">
                 <svg
                   className="fill-text-primary w-90.25 max-w-[calc(100%-2rem)] h-auto"
                   xmlns="http://www.w3.org/2000/svg"

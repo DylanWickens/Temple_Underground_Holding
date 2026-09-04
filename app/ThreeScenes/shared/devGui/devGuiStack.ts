@@ -11,7 +11,9 @@ const TOP = 10;
 // Top-to-bottom order of the stacked panels. Every panel must register here so
 // the stack can lay them out without overlapping.
 export const DEV_GUI_ORDER = {
-  equipmentPostProcessing: 0,
+  heroCloud: 0,
+  heroPostProcessing: 1,
+  equipmentPostProcessing: 5,
   particlesFraming: 10,
   particlesScrollLift: 15,
   footerPointCloud: 20,

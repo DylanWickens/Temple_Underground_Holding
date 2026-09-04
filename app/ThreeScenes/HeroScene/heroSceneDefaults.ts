@@ -78,7 +78,7 @@ export const POST_SCALE_STOPS: Stop<PostScale>[] = [
   { width: 768, value: { bloomStrength: 0.48, bloomRadius: 1, filmIntensity: 0.48 } },
   { width: 1280, value: { bloomStrength: 0.75, bloomRadius: 1, filmIntensity: 0.75 } },
   { width: 1920, value: { bloomStrength: 0.89, bloomRadius: 1, filmIntensity: 0.89 } },
-  { width: 3840, value: { bloomStrength: 1, bloomRadius: 1, filmIntensity: 1 } },
+  { width: 3840, value: { bloomStrength: 1, bloomRadius: 1, filmIntensity: 0.36 } },
 ];
 
 // ---------------------------------------------------------------------------

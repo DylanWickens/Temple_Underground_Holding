@@ -43,3 +43,5 @@ next-env.d.ts
 # ide
 .cursor
 .vscode
+# Claude Code local config
+.claude/

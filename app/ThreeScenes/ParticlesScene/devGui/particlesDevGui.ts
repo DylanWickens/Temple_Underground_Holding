@@ -7,12 +7,14 @@ import {
   CAMERA,
   CAMERA_POSITION_MARGIN,
   CAMERA_SLIDER_STEP,
+  EDGE_MASK,
   FRAMING,
   LIFT,
   LIFT_STOPS,
   LIFT_TRACKING,
   NOISE_DEFAULTS,
   RETURN_EASES,
+  applyEdgeMask,
   applyLiftStops,
   PARTICLES,
   applyCameraFraming,
@@ -193,6 +195,17 @@ export function setupScrollLiftDevGui(gui: GUI, getWidth: () => number) {
   look.add(LIFT, "glow", 0, 0.5, 0.005).name("Glow (all widths)");
   look.add(LIFT, "edgeFadeStart", -1, 1, 0.01).name("Top fade start (ndc y)");
   look.add(LIFT, "debugLift", 0, 600, 1).name("Hold lift (0 = off)");
+  // The canvas-wide ramp that hides the bloom halo's clip at the top edge. Sits
+  // outside LIFT_STOPS on purpose, so touching it does not drop width tracking.
+  look
+    .add(EDGE_MASK, "height", 0, 1, 0.01)
+    .name("Canvas fade (frac of height)")
+    .onChange(applyEdgeMask);
+  look
+    .add(EDGE_MASK, "curve", 0, 1, 0.01)
+    .name("Canvas fade curve")
+    .onChange(applyEdgeMask);
+  addLogButton(look, "Edge mask", () => EDGE_MASK);
 
   // Responsive fields take over width tracking when touched and mirror resizes
   // while tracking. glow / debugLift / returnEase sit outside the stop table.

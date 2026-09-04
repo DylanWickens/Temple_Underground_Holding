@@ -1,13 +1,19 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { PerspectiveCamera, useGLTF } from "@react-three/drei";
 import { useLenis } from "lenis/react";
 import gsap from "gsap";
 import Particles from "./Particles";
 import ResponsiveCamera from "./ResponsiveCamera";
-import { CAMERA_CLIPPING, LIFT, type LiftState } from "./particlesSceneDefaults";
+import {
+  CAMERA_CLIPPING,
+  LIFT,
+  edgeMaskImage,
+  registerEdgeMaskTarget,
+  type LiftState,
+} from "./particlesSceneDefaults";
 import { useSceneActivation } from "../shared/useSceneActivation";
 
 const MODEL_URL = "/models/Expanded.gltf";
@@ -24,6 +30,13 @@ export default function ParticlesScene() {
   useEffect(() => {
     useGLTF.preload(MODEL_URL);
   }, []);
+
+  // Hand the wrapper to the defaults module so the dev GUI — which is built inside
+  // the <Canvas> subtree — can repaint the mask without a re-render.
+  useLayoutEffect(() => {
+    registerEdgeMaskTarget(wrapRef.current);
+    return () => registerEdgeMaskTarget(null);
+  }, [wrapRef]);
 
   // Lenis lives here, outside <Canvas>: R3F renders into its own React root, so
   // the Lenis context does not reach components inside the canvas.
@@ -67,8 +80,13 @@ export default function ParticlesScene() {
     };
   }, [lenis, inView, lift]);
 
+  // Bloom cannot fall off inside its own render target, so the composite is
+  // ramped out at the top edge instead. See EDGE_MASK in the defaults.
   return (
-    <div ref={wrapRef} className="absolute inset-0">
+    <div
+      ref={wrapRef}
+      className="absolute inset-0"
+      style={{ maskImage: edgeMaskImage(), WebkitMaskImage: edgeMaskImage() }}>
       {shouldMount ? (
         <Canvas
           // R3F hard-codes `pointerEvents: "auto"` inline on its wrapper div, which would

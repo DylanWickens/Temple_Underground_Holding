@@ -281,3 +281,69 @@ export const RETURN_EASES = [
   "elastic.out(1, 0.4)",
   "bounce.out",
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Canvas edge mask
+// ---------------------------------------------------------------------------
+
+/**
+ * Vertical alpha ramp over the whole composited canvas, top-down.
+ *
+ * vEdgeFade dissolves the point sprites, but Bloom runs after them and its
+ * mipmap blur samples clamp-to-edge, so the halo cannot reach zero at the render
+ * target's own boundary — it smears the edge value outward and leaves a hard
+ * line where the footer element ends. Measured at the top row of the canvas the
+ * step was 10 -> 26 out of 255 with no transition, while the particles were
+ * ~500px below. No value of edgeFadeStart can remove that. This ramps the
+ * composite instead, so points, bloom and grain fade out together.
+ *
+ * Safe because the canvas clears to alpha 0 and the page behind is #0a0a0a:
+ * masking to transparent reveals the colour the unlit canvas already shows.
+ */
+export const EDGE_MASK = {
+  /** Fraction of canvas height, from the top, over which alpha ramps 0 -> 1. */
+  height: 0.35,
+  /** 0 = linear ramp, 1 = smoothstep. Higher keeps more of the glow. */
+  curve: 1,
+};
+
+/**
+ * Sampled rather than emitted as two stops so the ramp's slope does not kink
+ * where it meets full opacity — the glow underneath is itself rising, and a
+ * linear mask against it leaves a visible corner at the end of the band.
+ */
+const EDGE_MASK_SAMPLES = 8;
+
+/** Pure and deterministic, so SSR and the client agree. */
+export function edgeMaskImage(): string {
+  const band = EDGE_MASK.height;
+  if (!(band > 0)) return "none";
+
+  const stops: string[] = [];
+  for (let i = 0; i <= EDGE_MASK_SAMPLES; i++) {
+    const t = i / EDGE_MASK_SAMPLES;
+    const smooth = t * t * (3 - 2 * t);
+    const alpha = t + (smooth - t) * EDGE_MASK.curve;
+    stops.push(`rgba(0,0,0,${alpha.toFixed(3)}) ${(t * band * 100).toFixed(2)}%`);
+  }
+
+  return `linear-gradient(to bottom, ${stops.join(", ")})`;
+}
+
+// The masked wrapper, registered by ParticlesScene. The dev GUI is built inside
+// the <Canvas> subtree and so has no other route to an element outside it; same
+// shape as FooterScene's footerGlRef.
+let maskTarget: HTMLElement | null = null;
+
+export function registerEdgeMaskTarget(element: HTMLElement | null) {
+  maskTarget = element;
+  applyEdgeMask();
+}
+
+/** Repaints the mask from the live EDGE_MASK values. Called by the dev GUI. */
+export function applyEdgeMask() {
+  if (!maskTarget) return;
+  const image = edgeMaskImage();
+  maskTarget.style.maskImage = image;
+  maskTarget.style.webkitMaskImage = image;
+}

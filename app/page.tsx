@@ -4,7 +4,7 @@ import EquipmentListItem from "./components/EquipmentListItem";
 import SectionTitle from "./components/shared/SectionTitle";
 import LargerEquipmentList from "./components/LargerEquipmentList";
 import ParticlesScene from "./ThreeScenes/ParticlesScene/ParticlesScene";
-
+import HeroCanvas from "./ThreeScenes/HeroScene/HeroCanvas";
 import MobileAccordian from "./components/shared/MobileAccordian";
 import EquipmentScene from "./ThreeScenes/EquipmentScene/EquipmentScene";
 
@@ -13,18 +13,14 @@ export default function Home() {
 
   return (
     <div>
-      {/* overflow-x-clip, not hidden: `hidden` forces overflow-y:auto, which makes
-          main a scroll container and stops position:sticky pinning inside it. */}
       <main className="overflow-x-clip">
         <Navbar />
         <div className="flex flex-col justify-center items-center gap-y-section">
           {/* ThreeJS Scene */}
           <section id="hero" className="h-[110vh]">
             <div className="hero-stage relative w-screen h-[110vh] overflow-hidden">
-              {/* <HeroCanvas /> */}
+              <HeroCanvas />
 
-              {/* Centred on the viewport, not the 110vh stage: inset-0 here would centre
-                  the logo at 55vh and leave it sitting 5vh below the fold's centre. */}
               <div className="hero-logo absolute inset-x-0 top-0 h-screen z-10 flex items-center justify-center pointer-events-none">
                 <svg
                   className="fill-text-primary w-90.25 max-w-[calc(100%-2rem)] h-auto"

@@ -10,6 +10,7 @@ import { FilmPass } from "three/addons/postprocessing/FilmPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import {
   CAMERA_Z_STOPS,
+  COVER_STOPS,
   LIFT_STOPS,
   HERO_TUNING,
   NOISE,
@@ -46,6 +47,8 @@ export default function PostProcessing() {
   // The GUI closure needs the live canvas width without size.width becoming one of its
   // dependencies — that would tear down and rebuild the whole panel on every resize.
   const widthRef = useRef(size.width);
+  // The cover solve is aspect-driven below 768, so the readout needs the height too.
+  const heightRef = useRef(size.height);
   // Lets the resize path refresh the dev panel's readouts, which is the whole point of
   // them: the curve is tuned by resizing the window and watching where it lands.
   const refreshReadoutRef = useRef<(() => void) | null>(null);
@@ -128,10 +131,11 @@ export default function PostProcessing() {
 
   useEffect(() => {
     widthRef.current = size.width;
+    heightRef.current = size.height;
     postScaleRef.current = resolvePostScale(size.width);
     applyScaledPost();
     refreshReadoutRef.current?.();
-  }, [size.width, applyScaledPost]);
+  }, [size.width, size.height, applyScaledPost]);
 
   // ---------------------------------------------------------------------------
   // DEBUG — dev-only tuning GUI. lil-gui is imported inside the effect so it never
@@ -162,15 +166,20 @@ export default function PostProcessing() {
 
       const readout = {
         canvasWidth: Math.round(widthRef.current),
-        solvedZ: Number(solveCameraZ(widthRef.current).toFixed(2)),
+        canvasHeight: Math.round(heightRef.current),
+        solvedZ: Number(solveCameraZ(widthRef.current, heightRef.current).toFixed(2)),
       };
 
       const reframe = () => {
         postScaleRef.current = resolvePostScale(widthRef.current);
         applyScaledPost();
         readout.canvasWidth = Math.round(widthRef.current);
-        readout.solvedZ = Number(solveCameraZ(widthRef.current).toFixed(2));
+        readout.canvasHeight = Math.round(heightRef.current);
+        readout.solvedZ = Number(
+          solveCameraZ(widthRef.current, heightRef.current).toFixed(2),
+        );
         widthController?.updateDisplay();
+        heightController?.updateDisplay();
         zController?.updateDisplay();
 
         Object.assign(resolved, postScaleRef.current);
@@ -178,8 +187,20 @@ export default function PostProcessing() {
       };
       refreshReadoutRef.current = reframe;
 
+      // Phones only. How much of the frame's minor axis the build spans: 1 is edge to
+      // edge, above 1 crops. The distance itself is solved from the live aspect, so this
+      // is the only number to drag — and it holds its meaning on any phone.
+      COVER_STOPS.forEach((stop) => {
+        framing
+          .add(stop.value, "coverage", 0.6, 3, 0.01)
+          .name(`cover @ ${stop.width}px`)
+          .onChange(reframe)
+          .listen();
+      });
+
       // One slider per stop, so the curve can be shaped where it needs shaping
-      // rather than being forced through a single exponent.
+      // rather than being forced through a single exponent. 768px up only — below that
+      // the cover solve owns the framing and these do nothing.
       CAMERA_Z_STOPS.forEach((stop) => {
         framing
           .add(stop.value, "z", 2, 40, 0.1)
@@ -188,7 +209,8 @@ export default function PostProcessing() {
           .listen();
       });
 
-      // Vertical placement, per width band. Only 390 is lifted, to clear the logo.
+      // Vertical placement, per width band. Zero everywhere now that the build covers
+      // the frame rather than sitting above the logo.
       LIFT_STOPS.forEach((stop) => {
         framing
           .add(stop.value, "y", -0.5, 0.8, 0.01)
@@ -197,6 +219,7 @@ export default function PostProcessing() {
       });
 
       const widthController = framing.add(readout, "canvasWidth").name("Canvas width").disable();
+      const heightController = framing.add(readout, "canvasHeight").name("Canvas height").disable();
       const zController = framing.add(readout, "solvedZ").name("Solved z").disable();
 
       // Multipliers on the base POST values below, one set per width band. 1 leaves a
@@ -236,6 +259,7 @@ export default function PostProcessing() {
                   `export const POST = ${JSON.stringify(POST, null, 2)};\n\n` +
                   `export const OBJECT_DENSITIES = [${OBJECT_DENSITIES.join(", ")}];\n\n` +
                   `export const CAMERA_Z_STOPS = ${JSON.stringify(CAMERA_Z_STOPS)};\n\n` +
+                  `export const COVER_STOPS = ${JSON.stringify(COVER_STOPS)};\n\n` +
                   `export const LIFT_STOPS = ${JSON.stringify(LIFT_STOPS)};\n\n` +
                   `export const POST_SCALE_STOPS = ${JSON.stringify(POST_SCALE_STOPS)};\n\n` +
                   `HERO_TUNING = ${JSON.stringify(HERO_TUNING, null, 2)}`,

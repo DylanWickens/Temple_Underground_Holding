@@ -6,6 +6,7 @@
 
 import {
   resolveStops,
+  TIER_MAX_WIDTH,
   type Stop,
   type Tier,
 } from "../EquipmentScene/equipmentSceneDefaults";
@@ -25,21 +26,37 @@ export const CAMERA = {
 // ---------------------------------------------------------------------------
 // Responsive framing
 //
-// Camera distance is solved from the canvas WIDTH alone — height never enters it, so
-// a short wide window frames the same as a tall one. Distance rather than fov because
-// gl_PointSize is `uSize * aScale^2 / -viewZ`, so pulling back shrinks the points with
-// the model, which fov would not do.
+// Two regimes, split at COVER_MAX_WIDTH.
+//
+// Tablet and desktop: camera distance is solved from the canvas WIDTH alone — height
+// never enters it, so a short wide window frames the same as a tall one. Distance rather
+// than fov because gl_PointSize is `uSize * aScale^2 / -viewZ`, so pulling back shrinks
+// the points with the model, which fov would not do.
 //
 // A stop table rather than a formula, because the curve this needs is not one shape:
 // working back from what reads well, the exponent of a power law would have to be
-// ~0.10 at 2560, ~0.14 at 1440 and ~0.48 at 400. Nearly flat across desktop, steep
-// below it. Same width-keyed scheme as COMPOSITION_STOPS and LIFT_STOPS.
+// ~0.10 at 2560 and ~0.14 at 1440. Nearly flat across desktop. Same width-keyed scheme
+// as COMPOSITION_STOPS and LIFT_STOPS.
+//
+// Phones: the build has to COVER the frame — large, running off the left and right
+// edges, with the hero logo reading as an overlay on it. A width-keyed distance cannot
+// express that, because 390px is a very different frame at 19.5:9 than at 4:3. So this
+// band solves the distance from the frame's real aspect against a tunable coverage.
 // ---------------------------------------------------------------------------
 
-/** Camera distance by canvas width. Interpolated; flat outside the end stops. */
+/** Below this canvas width the camera covers the frame rather than following CAMERA_Z_STOPS. */
+export const COVER_MAX_WIDTH = TIER_MAX_WIDTH.mobile;
+
+/**
+ * Camera distance by canvas width, from COVER_MAX_WIDTH up. Interpolated; flat outside
+ * the end stops. Nothing below 768 lives here — that band is solved from COVER_STOPS,
+ * and a stop under it would be a second, silent source of truth.
+ */
 export const CAMERA_Z_STOPS: Stop<{ z: number }>[] = [
-  { width: 390, value: { z: 16 } },
-  { width: 768, value: { z: 27.3 } },
+  // 6, not the 27.3 this stop held: that value was out of family with every other one
+  // here (the curve ran 16 → 27.3 → 5.8), and since resolveStops lerps, it dragged the
+  // whole tablet band back with it.
+  { width: 768, value: { z: 6 } },
   { width: 1280, value: { z: 5.8 } },
   { width: 1440, value: { z: 5.5 } },
   { width: 1920, value: { z: 5.2 } },
@@ -47,11 +64,58 @@ export const CAMERA_Z_STOPS: Stop<{ z: number }>[] = [
   { width: 3840, value: { z: 4.8 } },
 ];
 
-/** Camera distance for a given canvas width in CSS px. */
-export function solveCameraZ(width: number): number {
+/**
+ * How much of the frame's MINOR axis the build spans, by canvas width. 1 is exactly edge
+ * to edge; above 1 it overflows and crops, which is the point.
+ *
+ * Minor axis rather than height: the build is wide and low, and NORMALIZED_SIZE measures
+ * its LONGEST dimension. Filling a portrait phone vertically would want z ≈ 2.2, inside
+ * the cloud's own 1.25 half-extent once orbited. Anchoring on the minor axis — the width,
+ * on a phone — reads as the same full bleed with the camera safely outside.
+ */
+export const COVER_STOPS: Stop<{ coverage: number }>[] = [
+  { width: 390, value: { coverage: 1.6 } },
+  // Not a composition choice — this is the handoff. 0.75 is what CAMERA_Z_STOPS' z: 6
+  // already resolves to on a portrait tablet frame, so the two regimes meet at 768
+  // instead of stepping. Tune the 390 stop for the phone look; tune this one only to
+  // keep the seam closed.
+  { width: 768, value: { coverage: 0.75 } },
+];
+
+/** Floor on the solved distance, so a coverage drag cannot seat the camera in the cloud. */
+export const MIN_CAMERA_Z = 2.6;
+
+/**
+ * Camera distance for a given canvas size in CSS px.
+ *
+ * `height` and `fov` bear only on the cover band: at COVER_MAX_WIDTH and above, the
+ * width-keyed table answers on its own exactly as it did before that band existed.
+ */
+export function solveCameraZ(
+  width: number,
+  height: number,
+  fov: number = CAMERA.fov,
+): number {
   const widest = CAMERA_Z_STOPS[CAMERA_Z_STOPS.length - 1].value.z;
   if (!Number.isFinite(width) || width <= 0) return widest;
-  return resolveStops(CAMERA_Z_STOPS, width).z;
+
+  // A height that cannot be trusted falls back to the table rather than solving off a
+  // bad aspect: a table framing is merely the wrong size, a bad aspect is a black frame.
+  if (width >= COVER_MAX_WIDTH || !Number.isFinite(height) || height <= 0) {
+    return resolveStops(CAMERA_Z_STOPS, width).z;
+  }
+
+  // visibleHeight = 2 * z * tan(fov / 2) and visibleWidth = visibleHeight * aspect, so
+  // the minor axis spans 2 * z * tan(fov / 2) * min(aspect, 1). Solved for the z at which
+  // NORMALIZED_SIZE covers `coverage` of it.
+  //
+  // Clamped low: a coverage of 0 solves to an infinite distance. The GUI slider cannot
+  // reach it, but a hand-edited stop should not be able to produce a NaN camera matrix.
+  const coverage = Math.max(resolveStops(COVER_STOPS, width).coverage, 0.1);
+  const aspect = width / height;
+  const minorAxis = 2 * Math.tan((fov * Math.PI) / 360) * Math.min(aspect, 1);
+
+  return Math.max(NORMALIZED_SIZE / (coverage * minorAxis), MIN_CAMERA_Z);
 }
 
 // ---------------------------------------------------------------------------
@@ -74,7 +138,9 @@ export type PostScale = {
 };
 
 export const POST_SCALE_STOPS: Stop<PostScale>[] = [
-  { width: 390, value: { bloomStrength: 0.59, bloomRadius: 0.01, filmIntensity: 0.87 } },
+  // Radius and grain re-set with the cover framing: both were dialled against a build
+  // that occupied a fraction of the frame, and read as a haze over one that fills it.
+  { width: 390, value: { bloomStrength: 0.59, bloomRadius: 1, filmIntensity: 0.5 } },
   { width: 768, value: { bloomStrength: 0.48, bloomRadius: 1, filmIntensity: 0.48 } },
   { width: 1280, value: { bloomStrength: 0.75, bloomRadius: 1, filmIntensity: 0.75 } },
   { width: 1920, value: { bloomStrength: 0.89, bloomRadius: 1, filmIntensity: 0.89 } },
@@ -85,13 +151,14 @@ export const POST_SCALE_STOPS: Stop<PostScale>[] = [
 // Lift — how far up the frame the cloud sits, as a ratio of the visible frame
 // height, so the composition holds at any canvas size. Positive is up.
 //
-// Only the phone stop is lifted: at 390 the model is framed small and pushed above
-// the centred hero logo. Everything from 768 up sits centred, and resolveStops holds
-// the last stop for anything wider.
+// Zero at every width: the cloud sits centred and the hero logo reads as an overlay on
+// it. The phone stop was lifted 0.25 while the build was framed small enough to sit
+// above that logo; it covers the frame now, so there is nothing to clear. The table is
+// kept, and kept in the dev GUI, as the mechanism for vertical art direction.
 // ---------------------------------------------------------------------------
 
 export const LIFT_STOPS: Stop<{ y: number }>[] = [
-  { width: 390, value: { y: 0.25 } },
+  { width: 390, value: { y: 0 } },
   { width: 768, value: { y: 0 } },
 ];
 
@@ -122,6 +189,24 @@ export const NOISE = {
   noisePeriod: 3.4,
   noiseSpeed: 0.15,
   noiseStrength: 0.037,
+};
+
+// ---------------------------------------------------------------------------
+// Reveal — the cloud twinkles in rather than appearing whole.
+//
+// Every point draws a random birth time across `duration`, then brightens over
+// `twinkle` seconds with a flash that overshoots to (1 + flash) before settling. The
+// clock advances by real frame deltas (capped), so a stall while bloom allocates
+// its targets pauses the reveal rather than skipping most of it.
+// ---------------------------------------------------------------------------
+
+export const REVEAL = {
+  /** Seconds over which the birth times are spread. */
+  duration: 2.0,
+  /** Seconds a single point takes to twinkle in, once born. */
+  twinkle: 0.45,
+  /** Peak overshoot of the twinkle: 0 is a plain fade-in. */
+  flash: 1.6,
 };
 
 export const POST = {
@@ -198,7 +283,10 @@ export const MAX_OBJECT_POINTS = 500_000;
 // the hand-tuned ratios between objects survive on a phone — the windows still read
 // far denser than the beams, everything is just thinner overall.
 export const TIER_DENSITY_SCALE: Record<Tier, number> = {
-  mobile: 0.33,
+  // 0.5, up from the 0.33 that suited the old small phone framing: the same points
+  // spread over a build that now fills the screen read as a sketch of one. Not 1 —
+  // the points grow with the model as the camera closes in, so fill rate rises too.
+  mobile: 0.5,
   tablet: 0.66,
   desktop: 1,
 };

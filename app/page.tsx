@@ -13,7 +13,6 @@ export default function Home() {
 
   return (
     <div>
-
       <main className="overflow-x-clip">
         <Navbar />
         <div className="flex flex-col justify-center items-center gap-y-section">

@@ -265,8 +265,17 @@ export function sampleHeroObject(
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("aScale", new THREE.BufferAttribute(scales, 1));
+  geometry.setAttribute("aBirth", new THREE.BufferAttribute(drawBirths(rng, total), 1));
 
   return geometry;
+}
+
+// A 0..1 birth time per point, for the twinkle-in reveal. Drawn AFTER the scales so
+// the stream that positions and sizes a given seed's cloud is unchanged by its arrival.
+function drawBirths(rng: () => number, count: number): Float32Array {
+  const births = new Float32Array(count);
+  for (let i = 0; i < count; i++) births[i] = rng();
+  return births;
 }
 
 /** The raw mesh vertices as a point geometry, for the "show mesh vertices" layer. */
@@ -282,5 +291,6 @@ export function buildBaseVertexGeometry(
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(baseVertices.slice(), 3));
   geometry.setAttribute("aScale", new THREE.BufferAttribute(scales, 1));
+  geometry.setAttribute("aBirth", new THREE.BufferAttribute(drawBirths(rng, count), 1));
   return geometry;
 }

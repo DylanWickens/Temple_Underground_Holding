@@ -1,11 +1,16 @@
 "use client";
 
-// Drives the camera distance from the canvas WIDTH, so a narrower window pulls back
-// and the build never crops at the sides.
+// Drives the camera distance from the canvas size, so the build is framed to the window
+// rather than to a fixed world position.
 //
 // Distance, not fov: gl_PointSize is `uSize * aScale^2 / -viewZ`, so pulling back
 // shrinks the points along with the model. That is the intended behaviour here, and
 // it is why this does not mirror ParticlesScene/ResponsiveCamera, which solves fov.
+//
+// Width alone decides it from 768px up — a short wide window frames the same as a tall
+// one. Below that, solveCameraZ deliberately takes the height too: phones need the build
+// to COVER the frame and crop at the sides, and how much of a 390px-wide frame the build
+// covers depends entirely on whether that frame is 19.5:9 or 4:3.
 
 import { useFrame } from "@react-three/fiber";
 import { solveCameraZ } from "./heroSceneDefaults";
@@ -18,7 +23,9 @@ export default function ResponsiveCamera() {
   // spherical from the live camera position every frame, so overwriting the radius
   // after it has run is safe — and zoom is disabled, so nothing else touches radius.
   useFrame(({ camera, size }) => {
-    const z = solveCameraZ(size.width);
+    // No fov argument: R3F types this camera as the base THREE.Camera, which has no
+    // fov, and nothing here ever moves it off CAMERA.fov — solveCameraZ defaults to it.
+    const z = solveCameraZ(size.width, size.height);
 
     // A camera still at the origin has no direction to preserve, and setLength on a
     // zero vector is a no-op — which would strand it inside the cloud. Seat it on the

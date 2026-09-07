@@ -20,6 +20,7 @@ import {
   NOISE,
   OBJECT_DENSITIES,
   PARTICLE_SIZE,
+  REVEAL,
   SHOW_HERO_DEV_GUI,
   solveLift,
   TIER_DENSITY_SCALE,
@@ -42,10 +43,18 @@ const HeroParticlesShader = shaderMaterial(
     uNoisePeriod: NOISE.noisePeriod,
     uNoiseSpeed: NOISE.noiseSpeed,
     uNoiseStrength: NOISE.noiseStrength,
+    uReveal: 0,
+    uRevealDuration: REVEAL.duration,
+    uRevealTwinkle: REVEAL.twinkle,
+    uRevealFlash: REVEAL.flash,
   },
   vertexShader,
   fragmentShader,
 );
+
+// A frame longer than this advances the reveal by only this much, so a compile or
+// target-allocation stall pauses the twinkle rather than jumping past most of it.
+const MAX_REVEAL_STEP = 1 / 30;
 extend({ HeroParticlesShader });
 
 declare module "@react-three/fiber" {
@@ -61,21 +70,36 @@ declare module "@react-three/fiber" {
 function HeroCloud({
   geometry,
   pointSize,
+  revealNonce,
 }: {
   geometry: THREE.BufferGeometry;
   pointSize: number;
+  /** Bumping this restarts the twinkle-in from dark. */
+  revealNonce: number;
 }) {
   const materialRef = useRef<InstanceType<typeof HeroParticlesShader>>(null);
 
+  // Seconds of drawn frames since this cloud (or its latest re-sample) appeared. A ref,
+  // not state: it moves every frame.
+  const revealRef = useRef(0);
+  useEffect(() => {
+    revealRef.current = 0;
+  }, [geometry, revealNonce]);
+
   // Uniforms are driven here so the dev GUI's mutations land without a re-render.
-  useFrame((state) => {
+  useFrame((state, delta) => {
     const uniforms = materialRef.current?.uniforms;
     if (!uniforms) return;
+    revealRef.current += Math.min(delta, MAX_REVEAL_STEP);
     uniforms.uTime.value = state.clock.elapsedTime;
     uniforms.uSize.value = pointSize * HERO_TUNING.pointSizeMultiplier;
     uniforms.uNoisePeriod.value = NOISE.noisePeriod;
     uniforms.uNoiseSpeed.value = NOISE.noiseSpeed;
     uniforms.uNoiseStrength.value = NOISE.noiseStrength;
+    uniforms.uReveal.value = revealRef.current;
+    uniforms.uRevealDuration.value = REVEAL.duration;
+    uniforms.uRevealTwinkle.value = REVEAL.twinkle;
+    uniforms.uRevealFlash.value = REVEAL.flash;
   });
 
   return (
@@ -89,6 +113,10 @@ function HeroCloud({
         uNoisePeriod={NOISE.noisePeriod}
         uNoiseSpeed={NOISE.noiseSpeed}
         uNoiseStrength={NOISE.noiseStrength}
+        uReveal={0}
+        uRevealDuration={REVEAL.duration}
+        uRevealTwinkle={REVEAL.twinkle}
+        uRevealFlash={REVEAL.flash}
         depthWrite={false}
         blending={THREE.AdditiveBlending}
       />
@@ -112,6 +140,8 @@ export default function HeroParticles() {
     HERO_TUNING.meshVerticesIndex,
   );
   const [hidePointCloud, setHidePointCloud] = useState(HERO_TUNING.hidePointCloud);
+  // Bumped by the dev GUI's Replay, so the twinkle-in can be watched again.
+  const [revealNonce, setRevealNonce] = useState(0);
 
   // The cheap half. HERO_TUNING.seed is read here rather than being a dep, so
   // Regenerate advances it and bumps the nonce together.
@@ -286,6 +316,14 @@ export default function HeroParticles() {
       // The sketch's naming quirk, kept: "Frequency" drives what the uniform calls
       // uNoisePeriod. Three names, one number.
       noise.add(NOISE, "noisePeriod", 0.5, 15, 0.1).name("Frequency").listen();
+
+      const reveal = gui.addFolder("Reveal");
+      reveal.add(REVEAL, "duration", 0, 6, 0.05).name("Duration (s)").listen();
+      reveal.add(REVEAL, "twinkle", 0.05, 2, 0.01).name("Twinkle (s)").listen();
+      reveal.add(REVEAL, "flash", 0, 4, 0.05).name("Flash").listen();
+      reveal
+        .add({ run: () => setRevealNonce((n) => n + 1) }, "run")
+        .name("Replay");
     });
 
     return () => {
@@ -320,11 +358,16 @@ export default function HeroParticles() {
                 key={model.objects[i].label}
                 geometry={geometry}
                 pointSize={pointSize}
+                revealNonce={revealNonce}
               />
             ),
           )}
       {baseGeometry ? (
-        <HeroCloud geometry={baseGeometry} pointSize={pointSize} />
+        <HeroCloud
+          geometry={baseGeometry}
+          pointSize={pointSize}
+          revealNonce={revealNonce}
+        />
       ) : null}
     </group>
   );

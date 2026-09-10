@@ -1,3 +1,6 @@
+// Colour and alpha multiplier. See PARTICLES.intensity.
+uniform float uIntensity;
+
 varying float vGlow;
 varying float vEdgeFade;
 
@@ -11,5 +14,5 @@ void main () {
     strength = pow(max(strength, 0.0), 10.0) * vEdgeFade;
     if (strength < 0.01) discard;
 
-gl_FragColor = vec4(vec3(strength), strength);
+gl_FragColor = vec4(vec3(strength), strength) * uIntensity;
 }

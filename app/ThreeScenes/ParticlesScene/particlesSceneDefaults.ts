@@ -19,7 +19,16 @@
 // Nothing in the production path writes to them.
 
 import type { PerspectiveCamera } from "three";
-import { resolveStops, type Stop } from "../EquipmentScene/equipmentSceneDefaults";
+import {
+  resolveStops,
+  tierForWidth,
+  type Stop,
+  type Tier,
+} from "../EquipmentScene/equipmentSceneDefaults";
+
+// Footer panels ("Footer Particles", "Scroll Lift") in dev, independent of the global
+// SHOW_DEV_GUI. Set to false once the look is dialled in.
+export const SHOW_PARTICLES_DEV_GUI = true;
 
 // ---------------------------------------------------------------------------
 // Camera
@@ -58,7 +67,7 @@ export const REFERENCE_ASPECT = REFERENCE_VIEWPORT.width / REFERENCE_VIEWPORT.he
 
 export const FRAMING = {
   /** Vertical fov, in degrees. Held at every aspect while widthLock is 0. */
-  referenceFov: 50,
+  referenceFov: 84,
   /**
    * Optional art-direction knob, off by default.
    *   0 = vertical lock. Visible world HEIGHT is constant; a narrower window
@@ -117,17 +126,42 @@ export function applyCameraFraming(
 // ---------------------------------------------------------------------------
 
 /**
- * `size` is `uSize` at REFERENCE_VIEWPORT and dpr 1.
+ * `size` is `uSize` at REFERENCE_VIEWPORT, dpr 1 and one point per mesh vertex
+ * (subdivisions 1). resolveParticleSize divides it down as the lattice gets finer.
  *
- * Calibrated so the shot is unchanged where it was originally tuned: the old
- * constant 175 at a 1336px-tall canvas and dpr 1 gives 175 * 972 / 1336 = 127.
+ * Hand-tuned at 3840 wide (desktop tier, subdivisions 3) with referenceFov 84.
+ *
+ * `intensity` multiplies the fragment's colour AND alpha. The points used to be drawn
+ * through the mesh's index buffer, which sent each interior vertex out six times as
+ * six stacked sprites. Additive blending (SRC_ALPHA, ONE) contributes rgb * a, so
+ * sqrt(6) ~= 2.45 would reproduce that old stacked brightness exactly from a single
+ * sprite; it is tuned down from there. The composer renders to HalfFloat, so values
+ * above 1 do not clamp.
  */
-export const PARTICLES = { size: 127 };
+export const PARTICLES = { size: 112, intensity: 1.84 };
+
+/**
+ * Triangle subdivision of the Landscape mesh per tier. See buildLandscapePoints.
+ *   1 -> 16,641 points   2 -> 66,049   3 -> 148,225
+ * Points shrink by the same factor (resolveParticleSize), so n^2 the points at 1/n^2
+ * the sprite area keeps fill rate and bloom energy per area where they were. What
+ * grows is vertex work — three 4D simplex samples a point — which is why phones stop
+ * at 2.
+ */
+export const TIER_SUBDIVISIONS: Record<Tier, number> = {
+  mobile: 2,
+  tablet: 3,
+  desktop: 3,
+};
+
+export function resolveSubdivisions(width: number): number {
+  return TIER_SUBDIVISIONS[tierForWidth(width)];
+}
 
 export const NOISE_DEFAULTS = {
-  noisePeriod: 1,
+  noisePeriod: 0.1,
   noiseSpeed: 0.4,
-  noiseStrength: 3,
+  noiseStrength: 3.24,
 };
 
 /**
@@ -135,16 +169,25 @@ export const NOISE_DEFAULTS = {
  * scale as `100.0 / -viewPosition.z`, which accounts for neither canvas height nor
  * fov. So `uSize` has to carry both: point size goes as deviceHeight / tan(fov / 2).
  *
- * Height is the term that matters here. The point count is fixed at 16,641, so as
- * the frame gets shorter the points must shrink with it or the ridge stops reading
- * as a ridge and turns into a row of blobs.
+ * Height is the term that matters here. The point count is fixed for a given tier,
+ * so as the frame gets shorter the points must shrink with it or the ridge stops
+ * reading as a ridge and turns into a row of blobs.
+ *
+ * `subdivisions` divides the size because it divides the lattice spacing: the finer
+ * the grid, the smaller each point, so neighbours sit the same number of diameters
+ * apart at every tier.
  */
-export function resolveParticleSize(height: number, dpr: number, fov: number): number {
+export function resolveParticleSize(
+  height: number,
+  dpr: number,
+  fov: number,
+  subdivisions: number,
+): number {
   const heightFactor = height / REFERENCE_VIEWPORT.height;
   const fovFactor =
     Math.tan(FRAMING.referenceFov * DEG_TO_HALF_RAD) / Math.tan(fov * DEG_TO_HALF_RAD);
 
-  return PARTICLES.size * dpr * heightFactor * fovFactor;
+  return (PARTICLES.size * dpr * heightFactor * fovFactor) / Math.max(subdivisions, 1);
 }
 
 // ---------------------------------------------------------------------------

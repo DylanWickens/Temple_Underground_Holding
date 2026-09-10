@@ -19,6 +19,7 @@ import {
   PARTICLES,
   applyCameraFraming,
   resolveParticleSize,
+  resolveSubdivisions,
   solveFov,
 } from "../particlesSceneDefaults";
 import { addLogButton } from "../../shared/devGui/devGuiHelpers";
@@ -43,7 +44,7 @@ type ParticlesDevGuiOptions = {
   camera: PerspectiveCamera;
   materialRef: MutableRefObject<ShaderMaterial | null>;
   /** Live canvas box, so the panel solves against the same numbers the scene does. */
-  getSize: () => { width: number; height: number; dpr: number };
+  getSize: () => { width: number; height: number; dpr: number; pointCount: number };
 };
 
 export function setupParticlesDevGui({
@@ -52,21 +53,24 @@ export function setupParticlesDevGui({
   materialRef,
   getSize,
 }: ParticlesDevGuiOptions) {
-  const readout = { fov: camera.fov, uSize: 0, canvas: "" };
+  const readout = { fov: camera.fov, uSize: 0, canvas: "", subdivisions: 0, points: 0 };
 
   const refresh = () => {
-    const { width, height, dpr } = getSize();
+    const { width, height, dpr, pointCount } = getSize();
 
     applyCameraFraming(camera, width, height);
 
     const fov = solveFov(width / height);
-    const uSize = resolveParticleSize(height, dpr, fov);
+    const subdivisions = resolveSubdivisions(width);
+    const uSize = resolveParticleSize(height, dpr, fov, subdivisions);
     if (materialRef.current) {
       materialRef.current.uniforms.uSize.value = uSize;
     }
 
     readout.fov = Number(fov.toFixed(2));
     readout.uSize = Number(uSize.toFixed(1));
+    readout.subdivisions = subdivisions;
+    readout.points = pointCount;
     readout.canvas = `${Math.round(width)} x ${Math.round(height)} @ ${dpr}`;
     gui.controllersRecursive().forEach((controller) => controller.updateDisplay());
   };
@@ -91,7 +95,11 @@ export function setupParticlesDevGui({
     .add(PARTICLES, "size", 10, 400, 1)
     .name("Size @ reference")
     .onChange(refresh);
+  // Read live in useFrame, so no onChange needed.
+  particlesFolder.add(PARTICLES, "intensity", 0, 6, 0.01).name("Intensity");
   particlesFolder.add(readout, "uSize").name("Solved uSize").disable();
+  particlesFolder.add(readout, "subdivisions").name("Subdivisions (tier)").disable();
+  particlesFolder.add(readout, "points").name("Points").disable();
   addLogButton(particlesFolder, "Particle settings", () => PARTICLES);
 
   const cameraFolder = gui.addFolder("Camera");

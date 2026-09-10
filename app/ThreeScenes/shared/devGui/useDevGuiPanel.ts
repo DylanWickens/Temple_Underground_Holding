@@ -10,11 +10,19 @@ type UseDevGuiPanelOptions = {
   order: number;
   setup: (gui: GUI) => void;
   deps?: unknown[];
+  /** Per-scene visibility, so one scene's panels can be shown on their own. */
+  show?: boolean;
 };
 
-export function useDevGuiPanel({ title, order, setup, deps = [] }: UseDevGuiPanelOptions) {
+export function useDevGuiPanel({
+  title,
+  order,
+  setup,
+  deps = [],
+  show = SHOW_DEV_GUI,
+}: UseDevGuiPanelOptions) {
   useEffect(() => {
-    if (process.env.NODE_ENV !== "development" || !SHOW_DEV_GUI) return;
+    if (process.env.NODE_ENV !== "development" || !show) return;
 
     let gui: GUI | undefined;
     let cancelled = false;

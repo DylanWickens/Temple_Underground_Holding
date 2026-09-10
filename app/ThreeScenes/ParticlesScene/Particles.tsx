@@ -15,9 +15,11 @@ import {
   NOISE_DEFAULTS,
   PARTICLES,
   resolveParticleSize,
+  resolveSubdivisions,
   solveFov,
   type LiftState,
 } from "./particlesSceneDefaults";
+import { buildLandscapePoints } from "./prepareLandscapePoints";
 import { useParticlesDevGui } from "./devGui/useParticlesDevGui";
 import vertexShader from './shaders/vert.glsl';
 import fragmentShader from "./shaders/frag.glsl";
@@ -41,6 +43,7 @@ type Uniforms = {
   uLiftScatter: number;
   uLiftSize: number;
   uEdgeFadeStart: number;
+  uIntensity: number;
 };
 
 const DEFAULT_UNIFORMS: Uniforms = {
@@ -60,6 +63,7 @@ const DEFAULT_UNIFORMS: Uniforms = {
   uLiftScatter: LIFT.scatter,
   uLiftSize: 0,
   uEdgeFadeStart: LIFT.edgeFadeStart,
+  uIntensity: PARTICLES.intensity,
 }
 
 const ParticlesShader = shaderMaterial(
@@ -101,25 +105,24 @@ export default function Particles({ lift, modelUrl }: ParticlesProps) {
   const sourceGeometry = landscape.geometry;
 
 
-  const pointsGeometry = useMemo(() => {
-    const geo = sourceGeometry.clone();
+  // Tiered by canvas width: a phone gets a coarser lattice than a desktop.
+  const subdivisions = resolveSubdivisions(width);
 
-    const count = geo.attributes.position.count;
-    const scales = new Float32Array(count);
+  const pointsGeometry = useMemo(
+    () => buildLandscapePoints(sourceGeometry, subdivisions),
+    [sourceGeometry, subdivisions],
+  );
 
-    for(let i = 0; i < count; i++){ 
-      scales[i] = Math.random();
-    }
-    geo.setAttribute("aScale", new THREE.BufferAttribute(scales, 1));
-    
-    return geo;
-}, [sourceGeometry]);
+  // A resize across a tier rebuilds the geometry; release the old buffers.
+  useEffect(() => {
+    return () => pointsGeometry.dispose();
+  }, [pointsGeometry]);
 
   // Height is the term that matters: gl_PointSize is in device pixels, so without
   // this the points hold their absolute size while the frame shrinks around them.
   const pointSize = useMemo(
-    () => resolveParticleSize(height, dpr, solveFov(width / height)),
-    [width, height, dpr],
+    () => resolveParticleSize(height, dpr, solveFov(width / height), subdivisions),
+    [width, height, dpr, subdivisions],
   );
 
   // Warm-up while still off-screen: compile the material in parallel, then render
@@ -145,7 +148,14 @@ export default function Particles({ lift, modelUrl }: ParticlesProps) {
     applyLiftStops(width);
   }, [width]);
 
-  useParticlesDevGui({ materialRef, camera, width, height, dpr });
+  useParticlesDevGui({
+    materialRef,
+    camera,
+    width,
+    height,
+    dpr,
+    pointCount: pointsGeometry.attributes.position.count,
+  });
 
   // Animate
   useFrame((state, delta) => {
@@ -179,6 +189,7 @@ export default function Particles({ lift, modelUrl }: ParticlesProps) {
     material.uniforms.uLiftVariance.value = LIFT.variance;
     material.uniforms.uLiftScatter.value = LIFT.scatter;
     material.uniforms.uEdgeFadeStart.value = LIFT.edgeFadeStart;
+    material.uniforms.uIntensity.value = PARTICLES.intensity;
   });
   
   return (
@@ -197,6 +208,7 @@ export default function Particles({ lift, modelUrl }: ParticlesProps) {
           uNoisePeriod={NOISE_DEFAULTS.noisePeriod}
           uNoiseStrength={NOISE_DEFAULTS.noiseStrength}
           uNoiseSpeed={NOISE_DEFAULTS.noiseSpeed}
+          uIntensity={PARTICLES.intensity}
           transparent
           depthWrite={false}
           blending={THREE.AdditiveBlending}

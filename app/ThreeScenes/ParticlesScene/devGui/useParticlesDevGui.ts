@@ -7,6 +7,7 @@ import type { Camera } from "@react-three/fiber";
 import { setupParticlesDevGui, setupScrollLiftDevGui } from "./particlesDevGui";
 import { useDevGuiPanel } from "../../shared/devGui/useDevGuiPanel";
 import { DEV_GUI_ORDER } from "../../shared/devGui/devGuiStack";
+import { SHOW_PARTICLES_DEV_GUI } from "../particlesSceneDefaults";
 
 type UseParticlesDevGuiOptions = {
   materialRef: RefObject<ShaderMaterial | null>;
@@ -14,6 +15,8 @@ type UseParticlesDevGuiOptions = {
   width: number;
   height: number;
   dpr: number;
+  /** Points in the live geometry, for the readout. Changes when a resize crosses a tier. */
+  pointCount: number;
 };
 
 export function useParticlesDevGui({
@@ -22,17 +25,19 @@ export function useParticlesDevGui({
   width,
   height,
   dpr,
+  pointCount,
 }: UseParticlesDevGuiOptions) {
   // Read through a ref so the panel's onChange handlers always solve against the
   // current canvas box rather than whatever it was when the panel was built.
-  const sizeRef = useRef({ width, height, dpr });
-  sizeRef.current = { width, height, dpr };
+  const sizeRef = useRef({ width, height, dpr, pointCount });
+  sizeRef.current = { width, height, dpr, pointCount };
 
   const refreshRef = useRef<(() => void) | null>(null);
 
   useDevGuiPanel({
     title: "Footer Particles",
     order: DEV_GUI_ORDER.particlesFraming,
+    show: SHOW_PARTICLES_DEV_GUI,
     deps: [camera],
     setup: (gui) => {
       const { refresh } = setupParticlesDevGui({
@@ -48,11 +53,12 @@ export function useParticlesDevGui({
   useDevGuiPanel({
     title: "Scroll Lift",
     order: DEV_GUI_ORDER.particlesScrollLift,
+    show: SHOW_PARTICLES_DEV_GUI,
     setup: (gui) => setupScrollLiftDevGui(gui, () => sizeRef.current.width),
   });
 
   // Keep the panel readouts honest after a resize.
   useEffect(() => {
     refreshRef.current?.();
-  }, [width, height, dpr]);
+  }, [width, height, dpr, pointCount]);
 }

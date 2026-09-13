@@ -18,10 +18,9 @@ import { solveCameraZ } from "./heroSceneDefaults";
 export default function ResponsiveCamera() {
   // useFrame rather than a layout effect so the dev GUI's framing sliders land live.
   //
-  // Ordering works out on its own: drei's OrbitControls updates at priority -1, this
-  // runs at 0, PostProcessing renders at 1. OrbitControls.update() re-derives its
-  // spherical from the live camera position every frame, so overwriting the radius
-  // after it has run is safe — and zoom is disabled, so nothing else touches radius.
+  // Priority 0, ahead of PostProcessing at 1, so the frame renders through the camera
+  // this just solved. Nothing else writes to the camera: the cursor tilt rotates the
+  // model group, not the view.
   useFrame(({ camera, size }) => {
     // No fov argument: R3F types this camera as the base THREE.Camera, which has no
     // fov, and nothing here ever moves it off CAMERA.fov — solveCameraZ defaults to it.
@@ -35,9 +34,9 @@ export default function ResponsiveCamera() {
       return;
     }
 
-    // setLength, not position.z: once the user has orbited, the camera is off the +Z
-    // axis, and setting z alone would swing it. Length is the orbit radius, and
-    // OrbitControls targets the origin.
+    // setLength, not position.z: this preserves the sightline whatever it is rather
+    // than assuming the camera is still on the +Z axis. Nothing moves it off that axis
+    // today, but distance is the thing being solved for here, not a z coordinate.
     camera.position.setLength(z);
   });
 

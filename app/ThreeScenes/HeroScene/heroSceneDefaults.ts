@@ -74,7 +74,15 @@ export const CAMERA_Z_STOPS: Stop<{ z: number }>[] = [
  * on a phone — reads as the same full bleed with the camera safely outside.
  */
 export const COVER_STOPS: Stop<{ coverage: number }>[] = [
-  { width: 390, value: { coverage: 1.6 } },
+  // 2.2, up from 1.6: at 1.6 the build read as an object sitting in a tall frame
+  // rather than the full bleed this band exists for. 2.2 solves to z ~2.97 on a
+  // 390x844 frame — deliberately the largest value that still clears MIN_CAMERA_Z on
+  // its own, so this number is the whole story and no clamp is silently eating it.
+  //
+  // Tune it with the mobile spin RUNNING: the build is wide and low, so a quarter turn
+  // presents its narrow face and a coverage dialled at the resting pose reads emptier
+  // there.
+  { width: 390, value: { coverage: 2.2 } },
   // Not a composition choice — this is the handoff. 0.75 is what CAMERA_Z_STOPS' z: 6
   // already resolves to on a portrait tablet frame, so the two regimes meet at 768
   // instead of stepping. Tune the 390 stop for the phone look; tune this one only to
@@ -151,15 +159,16 @@ export const POST_SCALE_STOPS: Stop<PostScale>[] = [
 // Lift — how far up the frame the cloud sits, as a ratio of the visible frame
 // height, so the composition holds at any canvas size. Positive is up.
 //
-// Zero at every width: the cloud sits centred and the hero logo reads as an overlay on
-// it. The phone stop was lifted 0.25 while the build was framed small enough to sit
-// above that logo; it covers the frame now, so there is nothing to clear. The table is
-// kept, and kept in the dev GUI, as the mechanism for vertical art direction.
+// 0.05 from the tablet band up: the cloud sits slightly high and the hero logo reads
+// as an overlay across it. resolveStops clamps flat above the last stop, so 768 is
+// also what 1920 and 3840 get — the lift ramps in between 390 and 768 and then holds.
+// The phone stop stays at 0: the build covers that frame edge to edge, so there is
+// nothing for it to clear.
 // ---------------------------------------------------------------------------
 
 export const LIFT_STOPS: Stop<{ y: number }>[] = [
   { width: 390, value: { y: 0 } },
-  { width: 768, value: { y: 0 } },
+  { width: 768, value: { y: 0.05 } },
 ];
 
 /** Vertical offset as a ratio of the visible frame height, for a canvas width. */
@@ -189,6 +198,102 @@ export const NOISE = {
   noisePeriod: 3.4,
   noiseSpeed: 0.15,
   noiseStrength: 0.037,
+};
+
+// ---------------------------------------------------------------------------
+// Pointer tilt — the cloud turns to follow the cursor rather than being dragged.
+// The pointer's Y drives rotation.x and its X drives rotation.y, each swinging to
+// the max below at the edge of the window and passing through the resting pose at
+// the centre. Authored in degrees: these are large enough that radians stop being
+// legible at a glance.
+// ---------------------------------------------------------------------------
+
+const deg = (d: number) => (d * Math.PI) / 180;
+
+export const MOUSE_ROTATION = {
+  /** Max tilt from pointer Y at the top and bottom of the window — 320° end to end. */
+  maxX: deg(160),
+  /** Max tilt from pointer X at the left and right of the window — 320° end to end. */
+  maxY: deg(160),
+  /** Exponential follow rate, per second. Higher tracks tighter; lower trails more. */
+  smoothing: 3,
+};
+
+/**
+ * Resting orientation of the build, in radians — the pose the cursor tilt swings
+ * around and settles back to, and the one MOBILE_SPIN drifts from. Applied to the
+ * group, not baked into the geometry: baking would mean re-sampling every object to
+ * change the framing.
+ *
+ * Y sat at a half turn; flipped by another 180°, which lands back on the glTF's own
+ * orientation. Kept as an explicit stop rather than deleted — this is the one place
+ * the resting pose is art-directed, and both rotation branches read it.
+ */
+export const MODEL_ROTATION = [0, deg(0), 0] as const;
+
+// ---------------------------------------------------------------------------
+// Mobile spin — below COVER_MAX_WIDTH the cursor tilt is replaced by a turntable.
+//
+// There is no cursor on a phone, so MOUSE_ROTATION reads as nothing at all there: the
+// cloud just sits. A slow drift gives the build life, and gives a horizontal swipe
+// something to push against.
+//
+// A gesture is AXIS-LOCKED once, on the first move that leaves a small deadzone
+// around the touchstart. Horizontal is the canvas's: every later move injects spin.
+// Vertical is the browser's page scroll: the cloud ignores it until the finger lifts.
+// The HeroCanvas wrapper carries `touch-action: pan-y pinch-zoom`, so the browser
+// makes the mirror-image call — it claims only vertical pans over the hero and leaves
+// horizontal ones to the canvas. Neither side calls preventDefault; the two heuristics
+// simply agree on where the split is, and axisRatio biases ours slightly toward the
+// scroll so a diagonal near the split goes dead rather than doing both.
+//
+// The swipe is DIRECTIONAL: it injects a signed angular velocity that decays back to
+// zero, so the rate is `baseRate + velocity`. A hard swipe against the drift drives
+// that sum negative and the build genuinely reverses for a moment before settling
+// back. The reversal falls out of the arithmetic; there is no separate case for it.
+//
+// Rates in degrees per second, matching MOUSE_ROTATION above: a spin rate in radians
+// per second is not a number anyone can picture.
+// ---------------------------------------------------------------------------
+
+export const MOBILE_SPIN = {
+  /** Resting drift. 13°/s is one turn every ~28 s. */
+  baseRate: deg(13),
+  /**
+   * Spin injected per SCREEN WIDTH of horizontal drag, accumulated over the gesture.
+   *
+   * Per width rather than per pixel, so a swipe means the same thing on a 360px and a
+   * 430px phone. Accumulated from each move's dx rather than sampled as a speed, so a
+   * device that fires touchmove at 120Hz does not inject twice what a 60Hz one does.
+   */
+  swipeGain: deg(345),
+  /** Ceiling on the TOTAL rate (drift + injection), so a flick cannot strobe the cloud. */
+  maxRate: deg(170),
+  /** Exponential decay of the injected velocity back to the resting drift, per second. */
+  decay: 1.2,
+  /** Drag speed, in screen widths per second, that counts as a full-intensity flick. */
+  flickSpeed: 3.0,
+  /** Extra uNoiseStrength at full intensity, ADDED to NOISE.noiseStrength. */
+  noiseStrengthBoost: 0.05,
+  /** Extra uNoisePeriod at full intensity. "A little" — the frequency barely moves. */
+  noisePeriodBoost: 1.2,
+  /** How fast the noise boost falls back to 0, per second. Faster than the spin decay. */
+  noiseDecay: 2.5,
+  /**
+   * Radius, in CSS px, the finger must leave before the gesture's axis is decided.
+   *
+   * Sized just above the browsers' own touch slop (8dp on Android, ~10pt on iOS), so
+   * the browser has usually committed by the time this fires and the decision here is
+   * made on the same displacement the browser acted on.
+   */
+  axisLockPx: 12,
+  /**
+   * |dx| must exceed |dy| * axisRatio for the gesture to be the canvas's. 1 is the
+   * browser's own 45° split; above 1 hands the ambiguous diagonals to the page scroll,
+   * because "scrolls AND spins" is the failure that reads as broken, while "neither"
+   * just reads as a swipe that did not take.
+   */
+  axisRatio: 1.2,
 };
 
 // ---------------------------------------------------------------------------

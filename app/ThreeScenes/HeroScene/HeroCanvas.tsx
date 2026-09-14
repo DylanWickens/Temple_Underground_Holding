@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, useGLTF } from "@react-three/drei";
+import { PerspectiveCamera, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { Perf } from "r3f-perf";
 import HeroParticles from "./HeroParticles";
@@ -29,7 +29,12 @@ export default function HeroCanvas() {
 
   return (
     // absolute inset-0 so the canvas fills .hero-stage rather than sizing itself.
-    <div ref={ref} className="absolute inset-0">
+    //
+    // touch-pan-y: the browser claims only VERTICAL pans over the hero, so a horizontal
+    // swipe belongs to the canvas (the spin in HeroParticles) and cannot drift the
+    // page. The listener there makes the mirror-image decision; neither side calls
+    // preventDefault. pinch-zoom stays for accessibility.
+    <div ref={ref} className="absolute inset-0 touch-pan-y touch-pinch-zoom">
       {shouldMount && tier ? (
         <Canvas
           dpr={[1, TIER_MAX_DPR[tier]]}
@@ -58,8 +63,6 @@ export default function HeroCanvas() {
           />
           {/* Outside Suspense, so framing does not wait on the model. */}
           <ResponsiveCamera />
-          {/* Zoom and pan off: the wheel has to keep scrolling the page. */}
-          <OrbitControls enableDamping enableZoom={false} enablePan={false} />
 
           <Suspense fallback={null}>
             <HeroParticles />

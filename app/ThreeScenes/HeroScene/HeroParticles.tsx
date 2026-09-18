@@ -13,6 +13,7 @@ import {
 } from "./prepareHeroGeometry";
 import {
   DENSITY_RANGE,
+  DRAG_SPIN,
   HERO_TUNING,
   MESH_VERTICES_ALL,
   MESH_VERTICES_OFF,
@@ -69,7 +70,7 @@ type SwipeAxis = "pending" | "x" | "y";
 
 /**
  * Live swipe state: written by the touch listeners, decayed by the frame loop, read by
- * both the group rotation and every cloud's noise uniforms.
+ * the group rotation.
  *
  * One mutable object rather than state or a context — it changes on every touchmove,
  * and a render per touch event is precisely what must not happen here.
@@ -77,8 +78,6 @@ type SwipeAxis = "pending" | "x" | "y";
 type SwipeState = {
   /** Angular velocity injected ON TOP of MOBILE_SPIN.baseRate, rad/s. Signed. */
   velocity: number;
-  /** 0..1 agitation driving the noise boost. Unsigned: a flick either way stirs it. */
-  intensity: number;
   /**
    * The axis lock for the live drag, or null when no single-finger drag is live.
    * "pending": still inside the deadzone, undecided. "x": the canvas's — every move
@@ -89,8 +88,30 @@ type SwipeState = {
   /** clientX/Y of the sample the next move is measured against. Meaningful only while axis is non-null. */
   lastX: number;
   lastY: number;
-  /** timeStamp of that sample, for the flick speed. */
+};
+
+/**
+ * Live mouse-drag state: the gesture in flight, the pose it has accumulated, and the
+ * coast it will leave behind. A ref for the same reason SwipeState is one.
+ *
+ * `x`/`y` are offsets on MODEL_ROTATION, exactly as the tilt is — the two simply add,
+ * so neither has a mode and neither has a discontinuity.
+ */
+type DragState = {
+  /** True between pointerdown and pointerup/cancel. */
+  active: boolean;
+  /** The captured pointer, so a second device's moves are ignored. */
+  pointerId: number;
+  /** clientX/Y and timeStamp of the sample the next move is measured against. */
+  lastX: number;
+  lastY: number;
   lastTime: number;
+  /** Accumulated rotation offsets, radians, wrapped at TAU. */
+  x: number;
+  y: number;
+  /** Measured release velocity per axis, rad/s. Integrated only while !active. */
+  vx: number;
+  vy: number;
 };
 
 extend({ HeroParticlesShader });
@@ -109,17 +130,11 @@ function HeroCloud({
   geometry,
   pointSize,
   revealNonce,
-  swipe,
 }: {
   geometry: THREE.BufferGeometry;
   pointSize: number;
   /** Bumping this restarts the twinkle-in from dark. */
   revealNonce: number;
-  /**
-   * The ref itself rather than its contents, so nothing reads `.current` during
-   * render — it is unwrapped inside useFrame below.
-   */
-  swipe: { current: SwipeState };
 }) {
   const materialRef = useRef<InstanceType<typeof HeroParticlesShader>>(null);
 
@@ -139,20 +154,11 @@ function HeroCloud({
     uniforms.uSize.value = pointSize * HERO_TUNING.pointSizeMultiplier;
     uniforms.uNoiseSpeed.value = NOISE.noiseSpeed;
 
-    // The swipe boost is ADDED to the NOISE values rather than replacing them, the
-    // same relationship PostProcessing has with POST: the dev GUI sliders hold the
-    // base look and the gesture is derived from them, so the two never fight. Writing
-    // the gesture into NOISE itself would make the panel twitch as a swipe decayed.
-    //
-    // Read straight off the shared object here rather than being handed a number by
-    // the parent. Children mount first in R3F, so this useFrame runs BEFORE the
-    // parent's — a value the parent computed would arrive a frame late. On desktop
-    // intensity is never raised at all, so these stay bit-identical to the base.
-    const { intensity } = swipe.current;
-    uniforms.uNoiseStrength.value =
-      NOISE.noiseStrength + MOBILE_SPIN.noiseStrengthBoost * intensity;
-    uniforms.uNoisePeriod.value =
-      NOISE.noisePeriod + MOBILE_SPIN.noisePeriodBoost * intensity;
+    // Straight off NOISE, which the dev GUI mutates live. The spin used to add an
+    // agitation boost on top of these; it was removed deliberately — a swipe stirring
+    // the cloud read as the build coming apart rather than turning.
+    uniforms.uNoiseStrength.value = NOISE.noiseStrength;
+    uniforms.uNoisePeriod.value = NOISE.noisePeriod;
     uniforms.uReveal.value = revealRef.current;
     uniforms.uRevealDuration.value = REVEAL.duration;
     uniforms.uRevealTwinkle.value = REVEAL.twinkle;
@@ -197,17 +203,35 @@ export default function HeroParticles() {
   // react-hooks/immutability rightly refuses that on a useState value.
   const swipeRef = useRef<SwipeState>({
     velocity: 0,
-    intensity: 0,
     axis: null,
     lastX: 0,
     lastY: 0,
-    lastTime: 0,
   });
   // DEBUG readout of the axis lock and the turntable rate, bound by the dev GUI
   // below. A ref so the GUI effect can bind it without listing it as a dependency.
   const spinReadoutRef = useRef({ rate: 0, axis: "-" });
+  const dragRef = useRef<DragState>({
+    active: false,
+    pointerId: -1,
+    lastX: 0,
+    lastY: 0,
+    lastTime: 0,
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+  });
+  // DEBUG readout of the accumulated drag pose, in degrees, bound by the dev GUI.
+  const dragReadoutRef = useRef({ x: 0, y: 0 });
 
-  const densityScale = TIER_DENSITY_SCALE[tierForWidth(size.width)];
+  const tier = tierForWidth(size.width);
+  const densityScale = TIER_DENSITY_SCALE[tier];
+  // Mirrored for the pointer listeners, which are installed once and must not churn
+  // across the 768 boundary. Same shape as geometriesRef below.
+  const tierRef = useRef(tier);
+  useEffect(() => {
+    tierRef.current = tier;
+  }, [tier]);
 
   // The costly half — one MeshSurfaceSampler per mesh. Never redone for a density.
   const model = useMemo(() => prepareHeroModel(modelScene), [modelScene]);
@@ -395,42 +419,81 @@ export default function HeroParticles() {
       // uNoisePeriod. Three names, one number.
       noise.add(NOISE, "noisePeriod", 0.5, 15, 0.1).name("Frequency").listen();
 
-      // Degrees on the panel, radians in the object — MOBILE_SPIN authors its rates
-      // with deg() for exactly this reason, and a rad/s slider is unreadable.
-      const spin = gui.addFolder("Mobile spin");
-      const spinDegrees = {
-        baseRate: (MOBILE_SPIN.baseRate * 180) / Math.PI,
-        swipeGain: (MOBILE_SPIN.swipeGain * 180) / Math.PI,
-        maxRate: (MOBILE_SPIN.maxRate * 180) / Math.PI,
-      };
-      const rate = (key: keyof typeof spinDegrees, name: string, max: number) =>
-        spin
-          .add(spinDegrees, key, 0, max, 1)
+      // Degrees on the panel, radians in the object — MOBILE_SPIN, MOUSE_ROTATION and
+      // DRAG_SPIN all author their angles with deg() for exactly this reason, and a
+      // rad/s slider is unreadable. One wrapper, shared by all three folders: `store`
+      // holds the degrees the slider binds to, `target` is the radians the frame loop
+      // and the listeners read live.
+      const degreeRow = (
+        folder: import("lil-gui").GUI,
+        store: Record<string, number>,
+        target: Record<string, number>,
+        key: string,
+        name: string,
+        max: number,
+        step = 1,
+      ) =>
+        folder
+          .add(store, key, 0, max, step)
           .name(name)
           .onChange((value: number) => {
-            MOBILE_SPIN[key] = (value * Math.PI) / 180;
+            target[key] = (value * Math.PI) / 180;
           });
 
-      rate("baseRate", "Base drift (°/s)", 180);
-      rate("swipeGain", "Swipe gain (°/width)", 1080);
-      rate("maxRate", "Max rate (°/s)", 720);
+      const toDegrees = (source: Record<string, number>, keys: string[]) =>
+        Object.fromEntries(keys.map((k) => [k, (source[k] * 180) / Math.PI]));
+
+      const spin = gui.addFolder("Mobile spin");
+      const mobileSpin = MOBILE_SPIN as unknown as Record<string, number>;
+      const spinDegrees = toDegrees(mobileSpin, [
+        "baseRate",
+        "swipeGain",
+        "maxRate",
+      ]);
+
+      // 0.1 steps on the drift: at whole degrees the slider snaps the 10.4 resting rate
+      // to an integer the first time it is touched, silently undoing the tuning.
+      degreeRow(spin, spinDegrees, mobileSpin, "baseRate", "Base drift (°/s)", 180, 0.1);
+      degreeRow(spin, spinDegrees, mobileSpin, "swipeGain", "Swipe gain (°/width)", 1080);
+      degreeRow(spin, spinDegrees, mobileSpin, "maxRate", "Max rate (°/s)", 720);
       spin.add(MOBILE_SPIN, "decay", 0.1, 6, 0.05).name("Spin decay /s").listen();
-      spin.add(MOBILE_SPIN, "flickSpeed", 0.5, 10, 0.1).name("Flick speed").listen();
-      spin
-        .add(MOBILE_SPIN, "noiseStrengthBoost", 0, 0.2, 0.001)
-        .name("Noise boost")
-        .listen();
-      spin
-        .add(MOBILE_SPIN, "noisePeriodBoost", 0, 6, 0.1)
-        .name("Frequency boost")
-        .listen();
-      spin.add(MOBILE_SPIN, "noiseDecay", 0.2, 8, 0.05).name("Noise decay /s").listen();
       // The touch listener reads MOBILE_SPIN live, so the lock needs no plumbing.
       spin.add(MOBILE_SPIN, "axisLockPx", 2, 40, 1).name("Axis lock (px)").listen();
       spin.add(MOBILE_SPIN, "axisRatio", 0.5, 3, 0.05).name("Axis ratio (x:y)").listen();
       // Read-only: the only way to watch the lock decide on an actual phone.
       spin.add(spinReadoutRef.current, "rate").name("Rate (°/s)").listen().disable();
       spin.add(spinReadoutRef.current, "axis").name("Axis").listen().disable();
+
+      // The desktop counterpart. Both objects are read live — the tilt inside useFrame,
+      // the drag gains inside the pointer handlers — so nothing here needs plumbing
+      // beyond the degree conversion.
+      const desktop = gui.addFolder("Desktop rotation");
+      const mouseRotation = MOUSE_ROTATION as unknown as Record<string, number>;
+      const dragSpin = DRAG_SPIN as unknown as Record<string, number>;
+      const tiltDegrees = toDegrees(mouseRotation, ["maxX", "maxY"]);
+      const dragDegrees = toDegrees(dragSpin, [
+        "gainPerWidth",
+        "gainPerHeight",
+        "maxRate",
+      ]);
+
+      degreeRow(desktop, tiltDegrees, mouseRotation, "maxX", "Tilt max X (°)", 180);
+      degreeRow(desktop, tiltDegrees, mouseRotation, "maxY", "Tilt max Y (°)", 180);
+      desktop
+        .add(MOUSE_ROTATION, "smoothing", 0.5, 10, 0.1)
+        .name("Tilt follow /s")
+        .listen();
+      degreeRow(desktop, dragDegrees, dragSpin, "gainPerWidth", "Drag gain X (°/width)", 1080);
+      degreeRow(desktop, dragDegrees, dragSpin, "gainPerHeight", "Drag gain Y (°/height)", 1080);
+      degreeRow(desktop, dragDegrees, dragSpin, "maxRate", "Max coast (°/s)", 720);
+      desktop.add(DRAG_SPIN, "decay", 0.1, 6, 0.05).name("Coast decay /s").listen();
+      desktop
+        .add(DRAG_SPIN, "velocitySmoothing", 0.05, 1, 0.01)
+        .name("Throw smoothing")
+        .listen();
+      // Read-only, the counterpart to the Mobile spin readouts above.
+      desktop.add(dragReadoutRef.current, "x").name("Drag X (°)").listen().disable();
+      desktop.add(dragReadoutRef.current, "y").name("Drag Y (°)").listen().disable();
 
       const reveal = gui.addFolder("Reveal");
       reveal.add(REVEAL, "duration", 0, 6, 0.05).name("Duration (s)").listen();
@@ -456,14 +519,29 @@ export default function HeroParticles() {
   // as the scroll gesture in ParticlesScene: a listener mutates a stable object, the
   // frame loop reads it.
   useEffect(() => {
+    const clamp1 = (v: number) => Math.min(Math.max(v, -1), 1);
+
     const onMove = (e: PointerEvent) => {
       // Mouse only. On touch a tap would snap the cloud to wherever the finger landed.
       if (e.pointerType !== "mouse") return;
-      pointerRef.current.x = (e.clientX / window.innerWidth) * 2 - 1;
-      pointerRef.current.y = (e.clientY / window.innerHeight) * 2 - 1;
+      // Clamped because a CAPTURED drag keeps reporting once the cursor leaves the
+      // window, and an unclamped ratio would push the tilt past MOUSE_ROTATION.maxY.
+      //
+      // Deliberately NOT suppressed while a drag is live: the pose is MODEL_ROTATION +
+      // drag + tilt on every frame, with no mode for either side to be in. Freezing
+      // this mid-drag would remove the (small, ±40°) tilt term from the gesture, at the
+      // cost of an 80° jump in the tilt target at the release — which then eases in on
+      // top of the coast and reads as the build carrying on after the hand let go. If
+      // the two ever do feel like they are fighting, the freeze is this one line:
+      // `if (dragRef.current.active) return;`.
+      pointerRef.current.x = clamp1((e.clientX / window.innerWidth) * 2 - 1);
+      pointerRef.current.y = clamp1((e.clientY / window.innerHeight) * 2 - 1);
     };
     // Cursor off the page: ease back to the resting pose rather than freeze mid-tilt.
     const onLeave = () => {
+      // Not mid-drag. Under pointer capture the gesture legitimately continues outside
+      // the window, and easing to centre under the user's own hand is not "leaving".
+      if (dragRef.current.active) return;
       pointerRef.current.x = 0;
       pointerRef.current.y = 0;
     };
@@ -501,10 +579,9 @@ export default function HeroParticles() {
     // Captured once so the cleanup removes from the same element it added to.
     const canvas = gl.domElement;
 
-    const track = (touch: Touch, time: number) => {
+    const track = (touch: Touch) => {
       swipe.lastX = touch.clientX;
       swipe.lastY = touch.clientY;
-      swipe.lastTime = time;
     };
 
     const onStart = (e: TouchEvent) => {
@@ -516,7 +593,7 @@ export default function HeroParticles() {
       // The velocity already in flight is deliberately NOT cleared: catching a
       // coasting build and pushing it again should add to it.
       swipe.axis = "pending";
-      track(e.touches[0], e.timeStamp);
+      track(e.touches[0]);
     };
 
     const onMove = (e: TouchEvent) => {
@@ -531,7 +608,7 @@ export default function HeroParticles() {
       // A finger lifted mid-pinch and one remains: a fresh gesture from here.
       if (swipe.axis === null) {
         swipe.axis = "pending";
-        track(touch, e.timeStamp);
+        track(touch);
         return;
       }
 
@@ -547,9 +624,9 @@ export default function HeroParticles() {
         swipe.axis =
           Math.abs(dx) > Math.abs(dy) * MOBILE_SPIN.axisRatio ? "x" : "y";
         if (swipe.axis === "y") return;
-        // "x" falls through. lastX/lastTime are still the touchstart sample, so this
-        // first injection covers the whole deadzone distance and time — nothing the
-        // finger did before the lock is thrown away.
+        // "x" falls through. lastX is still the touchstart sample, so this first
+        // injection covers the whole deadzone distance — nothing the finger did before
+        // the lock is thrown away.
       }
 
       const width = window.innerWidth || 1;
@@ -564,21 +641,7 @@ export default function HeroParticles() {
         MOBILE_SPIN.maxRate - MOBILE_SPIN.baseRate,
       );
 
-      // Agitation tracks the PEAK speed of the gesture rather than accumulating, so a
-      // long slow drag stirs the cloud far less than a flick of the same distance.
-      //
-      // Floored only, at 1/240 s: two samples inside the same millisecond would
-      // otherwise divide out to an enormous speed. There is deliberately no ceiling —
-      // capping dt on a stalled sample would INFLATE the speed it reports, which is
-      // the opposite of what a stall means.
-      const dt = Math.max((e.timeStamp - swipe.lastTime) / 1000, 1 / 240);
-      const speed = Math.abs(widths) / dt;
-      swipe.intensity = Math.min(
-        1,
-        Math.max(swipe.intensity, speed / MOBILE_SPIN.flickSpeed),
-      );
-
-      track(touch, e.timeStamp);
+      track(touch);
     };
 
     // Only the tracking stops. The velocity is left to the frame loop's decay, and
@@ -587,6 +650,9 @@ export default function HeroParticles() {
       swipe.axis = null;
     };
 
+    // Passive, every one of them. The drag effect below registers NON-passive so it
+    // can preventDefault; do not copy that registration onto these — a non-passive
+    // touch listener here is what breaks vertical page scroll over the hero on iOS.
     canvas.addEventListener("touchstart", onStart, { passive: true });
     canvas.addEventListener("touchmove", onMove, { passive: true });
     canvas.addEventListener("touchend", onEnd, { passive: true });
@@ -596,6 +662,114 @@ export default function HeroParticles() {
       canvas.removeEventListener("touchmove", onMove);
       canvas.removeEventListener("touchend", onEnd);
       canvas.removeEventListener("touchcancel", onEnd);
+    };
+  }, [gl]);
+
+  // Mouse click-and-drag -> an accumulating turn on both axes, with an inertial coast.
+  //
+  // pointerdown on the CANVAS rather than window, so a press on the navbar (fixed,
+  // z-100) is not a drag. The logo overlay is pointer-events-none and so is not a hit
+  // target, which leaves the whole hero reading as one draggable surface.
+  //
+  // setPointerCapture, then every other listener on the canvas too. Capture is what
+  // keeps the moves coming once the cursor crosses the navbar or leaves the window —
+  // and, the part that actually matters, what guarantees the pointerup. A button
+  // released outside the window without capture delivers that event nowhere at all,
+  // and the build would stay stuck in "grabbed" forever.
+  //
+  // Mouse only, for the same reason the tilt listener is: a touch already drives the
+  // axis-locked swipe above, and letting it drive this too would turn the build twice
+  // per gesture and bypass the axis lock entirely.
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const drag = dragRef.current;
+    const clampRate = (v: number) =>
+      Math.min(Math.max(v, -DRAG_SPIN.maxRate), DRAG_SPIN.maxRate);
+
+    const endDrag = () => {
+      if (!drag.active) return;
+      drag.active = false;
+      drag.pointerId = -1;
+      // vx/vy are deliberately left alone — that coast IS the throw.
+      //
+      // Cleared rather than set back to "grab": the resting cursor lives on
+      // HeroCanvas's wrapper, and the canvas inherits it the moment this override goes.
+      canvas.style.cursor = "";
+    };
+
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || e.button !== 0 || !e.isPrimary) return;
+      // Below 768 the turntable owns the build. Only the gesture START is gated; the
+      // listener itself is installed once, so a phone rotating across the breakpoint
+      // does not churn it.
+      if (tierRef.current === "mobile") return;
+
+      // Text selection and the native drag-image. This listener is registered
+      // NON-passive for exactly this line — see the touch listeners above, which must
+      // stay passive.
+      e.preventDefault();
+
+      drag.active = true;
+      drag.pointerId = e.pointerId;
+      drag.lastX = e.clientX;
+      drag.lastY = e.clientY;
+      drag.lastTime = e.timeStamp;
+      // Catching a coasting build stops it dead, with nothing to clear here: the frame
+      // loop integrates vx/vy only while !active, and the residue decays under the held
+      // button until a move re-injects it.
+      canvas.setPointerCapture(e.pointerId);
+      canvas.style.cursor = "grabbing";
+    };
+
+    const onMove = (e: PointerEvent) => {
+      if (!drag.active || e.pointerId !== drag.pointerId) return;
+      // A release the page never saw: an alert, a devtools break, a drop outside.
+      if (e.buttons === 0) return endDrag();
+
+      const width = window.innerWidth || 1;
+      const height = window.innerHeight || 1;
+      // Per screen width/height rather than per pixel, so a drag means the same thing
+      // on a 1280 laptop and a 4K display — MOBILE_SPIN.swipeGain's argument. Signed,
+      // and in the same sense as the tilt: drag right turns +y, drag down turns +x.
+      const stepY = ((e.clientX - drag.lastX) / width) * DRAG_SPIN.gainPerWidth;
+      const stepX = ((e.clientY - drag.lastY) / height) * DRAG_SPIN.gainPerHeight;
+      drag.x += stepX;
+      drag.y += stepY;
+
+      // Measured alongside, only for the throw. The deltas above went STRAIGHT onto the
+      // pose rather than being injected as a velocity the way the mobile swipe is: a
+      // swipe is a shove at a flywheel, a drag is a hand on the model, and a hand does
+      // not lag.
+      //
+      // dt floored at 1/240 s, exactly as the swipe's speed was — two samples inside
+      // one millisecond divide out to an absurd speed. No ceiling, for the same reason:
+      // capping dt on a stalled sample would INFLATE the speed it reports.
+      const dt = Math.max((e.timeStamp - drag.lastTime) / 1000, 1 / 240);
+      const blend = DRAG_SPIN.velocitySmoothing;
+      drag.vx = clampRate(drag.vx + (stepX / dt - drag.vx) * blend);
+      drag.vy = clampRate(drag.vy + (stepY / dt - drag.vy) * blend);
+
+      drag.lastX = e.clientX;
+      drag.lastY = e.clientY;
+      drag.lastTime = e.timeStamp;
+    };
+
+    // No options object: preventDefault in onDown needs these non-passive.
+    canvas.addEventListener("pointerdown", onDown);
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerup", endDrag);
+    canvas.addEventListener("pointercancel", endDrag);
+    canvas.addEventListener("lostpointercapture", endDrag);
+    return () => {
+      canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerup", endDrag);
+      canvas.removeEventListener("pointercancel", endDrag);
+      canvas.removeEventListener("lostpointercapture", endDrag);
+      // Or a fast refresh mid-drag leaves the canvas grabbed forever.
+      drag.active = false;
+      drag.pointerId = -1;
+      canvas.style.cursor = "";
     };
   }, [gl]);
 
@@ -613,14 +787,24 @@ export default function HeroParticles() {
 
     // delta is capped so a stall — bloom allocating its render targets, a tab coming
     // back — eases rather than snapping in one frame.
+    // Also the ceiling on what a coast frozen off-screen can do when the hero scrolls
+    // back in: frameloop drops to "never" out of view, so delta arrives as one large
+    // gap, and this caps it at 0.1 s of motion before the decay below takes over.
     const step = Math.min(delta, 0.1);
     const swipe = swipeRef.current;
+    const drag = dragRef.current;
 
-    // Decayed on BOTH branches. A touch laptop above 768 still fires the swipe
-    // listeners, and an intensity left undecayed there would strand the noise boost
-    // on permanently; a velocity left undecayed would lurch on the next resize down.
+    // Decayed on BOTH branches: a touch laptop above 768 still fires the swipe
+    // listeners, and a velocity left undecayed there would lurch on the next resize
+    // down.
     swipe.velocity *= Math.exp(-MOBILE_SPIN.decay * step);
-    swipe.intensity *= Math.exp(-MOBILE_SPIN.noiseDecay * step);
+
+    // Decayed on both branches AND while the button is held, all for one reason: this
+    // is a measurement of what the hand is doing, so a hand that stops doing it must
+    // stop measuring. A drag that stops dead and then releases therefore throws nothing.
+    const coast = Math.exp(-DRAG_SPIN.decay * step);
+    drag.vx *= coast;
+    drag.vy *= coast;
 
     if (DEBUG) {
       const readout = spinReadoutRef.current;
@@ -630,6 +814,8 @@ export default function HeroParticles() {
         ((MOBILE_SPIN.baseRate + swipe.velocity) * 180) / Math.PI,
       );
       readout.axis = swipe.axis ?? "-";
+      dragReadoutRef.current.x = Math.round((drag.x * 180) / Math.PI);
+      dragReadoutRef.current.y = Math.round((drag.y * 180) / Math.PI);
     }
 
     if (tierForWidth(frame.width) === "mobile") {
@@ -646,10 +832,24 @@ export default function HeroParticles() {
       group.rotation.z = MODEL_ROTATION[2];
 
       // So a resize back up starts from the resting pose rather than easing out of a
-      // tilt the cursor never set.
+      // tilt the cursor never set — and, same argument, rather than snapping into a
+      // drag pose it never set either. A drag cannot START below 768, but one can be
+      // COASTING when the window crosses the boundary.
       tiltRef.current.x = 0;
       tiltRef.current.y = 0;
+      drag.x = 0;
+      drag.y = 0;
+      drag.vx = 0;
+      drag.vy = 0;
       return;
+    }
+
+    // Only once the button is up. While it is down the move handler is already putting
+    // the cursor's deltas onto x/y, and integrating the velocity it measured from those
+    // same deltas on top would simply double them.
+    if (!drag.active) {
+      drag.x = (drag.x + drag.vx * step) % TAU;
+      drag.y = (drag.y + drag.vy * step) % TAU;
     }
 
     // Frame-rate-independent ease, the same idiom as the lift smoothing in
@@ -659,9 +859,11 @@ export default function HeroParticles() {
     tiltRef.current.x += (pointerY * MOUSE_ROTATION.maxX - tiltRef.current.x) * k;
     tiltRef.current.y += (pointerX * MOUSE_ROTATION.maxY - tiltRef.current.y) * k;
 
-    // Tilt is an offset on the resting pose, not the pose itself.
-    group.rotation.x = MODEL_ROTATION[0] + tiltRef.current.x;
-    group.rotation.y = MODEL_ROTATION[1] + tiltRef.current.y;
+    // Both are offsets on the resting pose, never a replacement for it: MODEL_ROTATION
+    // is where the build loads, drag is where it has been turned to, tilt is the lean
+    // toward the cursor. On frame 1 both offsets are 0, so the build loads face first.
+    group.rotation.x = MODEL_ROTATION[0] + drag.x + tiltRef.current.x;
+    group.rotation.y = MODEL_ROTATION[1] + drag.y + tiltRef.current.y;
     group.rotation.z = MODEL_ROTATION[2];
     spinRef.current = 0;
   });
@@ -679,7 +881,6 @@ export default function HeroParticles() {
                 geometry={geometry}
                 pointSize={pointSize}
                 revealNonce={revealNonce}
-                swipe={swipeRef}
               />
             ),
           )}
@@ -688,7 +889,6 @@ export default function HeroParticles() {
           geometry={baseGeometry}
           pointSize={pointSize}
           revealNonce={revealNonce}
-          swipe={swipeRef}
         />
       ) : null}
     </group>

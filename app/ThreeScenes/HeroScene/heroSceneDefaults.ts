@@ -201,20 +201,26 @@ export const NOISE = {
 };
 
 // ---------------------------------------------------------------------------
-// Pointer tilt — the cloud turns to follow the cursor rather than being dragged.
-// The pointer's Y drives rotation.x and its X drives rotation.y, each swinging to
-// the max below at the edge of the window and passing through the resting pose at
-// the centre. Authored in degrees: these are large enough that radians stop being
-// legible at a glance.
+// Pointer tilt — the cloud LEANS toward the cursor. The pointer's Y drives
+// rotation.x and its X drives rotation.y, each swinging to the max below at the edge
+// of the window and passing through the resting pose at the centre. Authored in
+// degrees: radians stop being legible at a glance.
+//
+// Deliberately SMALL, and it was not always: this used to be ±160° per axis, back
+// when it was the only thing that could turn the build. DRAG_SPIN below now owns
+// turning, and the two simply ADD — the pose is MODEL_ROTATION + drag + tilt on every
+// frame, with no mode for either side to be in. That only works while the tilt reads
+// as a lean rather than a second, competing gain, which is what ±40° buys. Raising it
+// far past that makes a drag feel like it has two different speeds.
 // ---------------------------------------------------------------------------
 
 const deg = (d: number) => (d * Math.PI) / 180;
 
 export const MOUSE_ROTATION = {
-  /** Max tilt from pointer Y at the top and bottom of the window — 320° end to end. */
-  maxX: deg(160),
-  /** Max tilt from pointer X at the left and right of the window — 320° end to end. */
-  maxY: deg(160),
+  /** Max tilt from pointer Y at the top and bottom of the window — 80° end to end. */
+  maxX: deg(40),
+  /** Max tilt from pointer X at the left and right of the window — 80° end to end. */
+  maxY: deg(40),
   /** Exponential follow rate, per second. Higher tracks tighter; lower trails more. */
   smoothing: 3,
 };
@@ -230,6 +236,46 @@ export const MOUSE_ROTATION = {
  * the resting pose is art-directed, and both rotation branches read it.
  */
 export const MODEL_ROTATION = [0, deg(0), 0] as const;
+
+// ---------------------------------------------------------------------------
+// Desktop drag — click and drag turns the build, on both axes, and it keeps turning
+// after the release.
+//
+// Read alongside MOUSE_ROTATION, not instead of it: the pose is MODEL_ROTATION + drag
+// + tilt on every frame. MODEL_ROTATION is where the build loads, drag is where it has
+// been turned to, tilt is the lean toward the cursor. Nothing here has a mode, so
+// nothing has a discontinuity — and the tilt is capped at ±40° for exactly that
+// reason, because it rides on top of this unbounded accumulator.
+//
+// Normalised per screen WIDTH and HEIGHT rather than per pixel, so a drag means the
+// same thing on a 1280 laptop and a 4K display — the same argument MOBILE_SPIN.
+// swipeGain makes. Degrees, for the same reason as everything else here.
+//
+// The gesture applies its deltas STRAIGHT to the accumulated pose; the velocity below
+// is measured alongside, purely for the throw. A swipe on a phone is a shove at a
+// flywheel, but a drag is a hand on the model, and a hand does not lag.
+// ---------------------------------------------------------------------------
+
+export const DRAG_SPIN = {
+  /** Rotation.y per SCREEN WIDTH of horizontal drag. */
+  gainPerWidth: deg(180),
+  /** Rotation.x per SCREEN HEIGHT of vertical drag. */
+  gainPerHeight: deg(180),
+  /** Ceiling on the release coast, per axis. A flick cannot strobe the cloud. */
+  maxRate: deg(220),
+  /**
+   * Exponential decay of the coast, per second. Does double duty: it also bleeds the
+   * MEASURED velocity away while the button is held, so a drag that stops dead and
+   * then releases throws nothing.
+   */
+  decay: 2.0,
+  /**
+   * How much of each move's instantaneous speed folds into the measured velocity,
+   * 0..1. A short EMA rather than the last sample alone, so one stuttery frame before
+   * the release does not define the throw.
+   */
+  velocitySmoothing: 0.35,
+};
 
 // ---------------------------------------------------------------------------
 // Mobile spin — below COVER_MAX_WIDTH the cursor tilt is replaced by a turntable.
@@ -257,8 +303,8 @@ export const MODEL_ROTATION = [0, deg(0), 0] as const;
 // ---------------------------------------------------------------------------
 
 export const MOBILE_SPIN = {
-  /** Resting drift. 13°/s is one turn every ~28 s. */
-  baseRate: deg(13),
+  /** Resting drift. 10.4°/s is one turn every ~35 s. */
+  baseRate: deg(10.4),
   /**
    * Spin injected per SCREEN WIDTH of horizontal drag, accumulated over the gesture.
    *
@@ -271,14 +317,6 @@ export const MOBILE_SPIN = {
   maxRate: deg(170),
   /** Exponential decay of the injected velocity back to the resting drift, per second. */
   decay: 1.2,
-  /** Drag speed, in screen widths per second, that counts as a full-intensity flick. */
-  flickSpeed: 3.0,
-  /** Extra uNoiseStrength at full intensity, ADDED to NOISE.noiseStrength. */
-  noiseStrengthBoost: 0.05,
-  /** Extra uNoisePeriod at full intensity. "A little" — the frequency barely moves. */
-  noisePeriodBoost: 1.2,
-  /** How fast the noise boost falls back to 0, per second. Faster than the spin decay. */
-  noiseDecay: 2.5,
   /**
    * Radius, in CSS px, the finger must leave before the gesture's axis is decided.
    *

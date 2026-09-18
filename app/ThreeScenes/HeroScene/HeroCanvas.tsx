@@ -34,7 +34,25 @@ export default function HeroCanvas() {
     // swipe belongs to the canvas (the spin in HeroParticles) and cannot drift the
     // page. The listener there makes the mirror-image decision; neither side calls
     // preventDefault. pinch-zoom stays for accessibility.
-    <div ref={ref} className="absolute inset-0 touch-pan-y touch-pinch-zoom">
+    //
+    // touch-action is TOUCH- AND PEN-ONLY and cannot affect the mouse drag in
+    // HeroParticles, so never reach for touch-none to "fix" a mouse-drag problem: that
+    // hands the browser nothing over the hero and silently kills vertical page scroll
+    // on a phone, which is the whole axis-lock contract documented here and on
+    // MOBILE_SPIN. select-none is the mouse half — belt-and-braces for Safari, on top
+    // of the preventDefault the drag's pointerdown already does. The logo is a SIBLING
+    // of this wrapper, so its own selection is untouched.
+    //
+    // The resting cursor is here rather than on the canvas, and in JS rather than a
+    // Tailwind `md:cursor-grab`: Tailwind v4's `md` is 48rem against the browser's
+    // DEFAULT font size, which drifts from tierForWidth's CSS-px 768 the moment a user
+    // changes it. useWindowTier calls that same function, so this agrees exactly with
+    // the frame loop's own mobile/desktop split. The canvas inherits it; the drag in
+    // HeroParticles overrides it with "grabbing" for the length of a gesture.
+    <div
+      ref={ref}
+      style={{ cursor: tier && tier !== "mobile" ? "grab" : undefined }}
+      className="absolute inset-0 touch-pan-y touch-pinch-zoom select-none">
       {shouldMount && tier ? (
         <Canvas
           dpr={[1, TIER_MAX_DPR[tier]]}

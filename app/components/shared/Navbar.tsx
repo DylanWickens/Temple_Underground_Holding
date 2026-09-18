@@ -39,6 +39,9 @@ export default function Navbar() {
             {label}
           </a>
         ))}
+        <a href="mailto:fabio@templeco.co" className="nav">
+          Contact
+        </a>
       </nav>
     </div>
   );

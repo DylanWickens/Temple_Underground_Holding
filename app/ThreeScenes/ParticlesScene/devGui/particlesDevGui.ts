@@ -9,6 +9,7 @@ import {
   CAMERA_SLIDER_STEP,
   EDGE_MASK,
   FRAMING,
+  HOVER,
   LIFT,
   LIFT_STOPS,
   LIFT_TRACKING,
@@ -231,4 +232,19 @@ export function setupScrollLiftDevGui(gui: GUI, getWidth: () => number) {
   }));
 
   refreshReadout();
+}
+
+/**
+ * Standalone panel for the pointer hover brush. Like the lift panel every field
+ * is read live in useFrame, so no onChange plumbing — but unlike the lift there
+ * is no stop table, so nothing here touches width tracking.
+ */
+export function setupHoverDevGui(gui: GUI) {
+  gui.add(HOVER, "radius", 0.02, 1, 0.01).name("Radius (frac of height)");
+  gui.add(HOVER, "sizeScale", 0, 2, 0.01).name("Size gain (0.2 = +20%)");
+  // Never 0: pow(0.0, 0.0) is undefined in GLSL.
+  gui.add(HOVER, "power", 0.25, 6, 0.05).name("Falloff");
+  gui.add(HOVER, "smoothing", 0.5, 30, 0.25).name("Follow / fade velocity");
+  gui.add(HOVER, "debugHover", 0, 1, 0.01).name("Hold brush at centre (0 = off)");
+  addLogButton(gui, "Hover settings", () => HOVER);
 }

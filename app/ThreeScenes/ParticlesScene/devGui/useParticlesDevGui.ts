@@ -4,7 +4,11 @@
 import { useEffect, useRef, type RefObject } from "react";
 import type { PerspectiveCamera, ShaderMaterial } from "three";
 import type { Camera } from "@react-three/fiber";
-import { setupParticlesDevGui, setupScrollLiftDevGui } from "./particlesDevGui";
+import {
+  setupHoverDevGui,
+  setupParticlesDevGui,
+  setupScrollLiftDevGui,
+} from "./particlesDevGui";
 import { useDevGuiPanel } from "../../shared/devGui/useDevGuiPanel";
 import { DEV_GUI_ORDER } from "../../shared/devGui/devGuiStack";
 import { SHOW_PARTICLES_DEV_GUI } from "../particlesSceneDefaults";
@@ -55,6 +59,13 @@ export function useParticlesDevGui({
     order: DEV_GUI_ORDER.particlesScrollLift,
     show: SHOW_PARTICLES_DEV_GUI,
     setup: (gui) => setupScrollLiftDevGui(gui, () => sizeRef.current.width),
+  });
+
+  useDevGuiPanel({
+    title: "Pointer Hover",
+    order: DEV_GUI_ORDER.particlesHover,
+    show: SHOW_PARTICLES_DEV_GUI,
+    setup: (gui) => setupHoverDevGui(gui),
   });
 
   // Keep the panel readouts honest after a resize.

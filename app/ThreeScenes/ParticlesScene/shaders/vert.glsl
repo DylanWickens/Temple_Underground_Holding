@@ -21,6 +21,14 @@ uniform float uLiftSize;
 // NDC y where the top-edge fade starts; fully transparent at the canvas edge (1.0).
 uniform float uEdgeFadeStart;
 
+// Pointer brush, in NDC like the lift band. uHoverRadius is aspect-corrected on
+// the CPU so the brush reads as a circle on screen rather than an ellipse.
+uniform vec2 uPointer;
+uniform vec2 uHoverRadius;
+uniform float uHoverStrength;
+uniform float uHoverSize;
+uniform float uHoverPower;
+
 attribute float aScale;
 
 varying float vGlow;
@@ -49,6 +57,12 @@ void main() {
     // Hold the foreground still: only points beyond uLiftNear lift.
     falloff *= smoothstep(uLiftNear, uLiftNear + uLiftFade, -baseView.z);
 
+    // Pointer brush. Reuses the same undisplaced ndc as the lift, for the same
+    // reason: measuring from the noise-displaced position makes the edge boil.
+    vec2 hoverQ = (ndc - uPointer) / uHoverRadius;
+    float hover = 1.0 - smoothstep(0.0, 1.0, length(hoverQ));
+    hover = baseClip.w > 0.0 ? pow(hover, uHoverPower) * uHoverStrength : 0.0;
+
     // Lift is along model Y. The Landscape node has an identity transform, so this
     // is also world Y; revisit if the points are ever rotated or scaled.
     // Lifted particles drift rather than rising as a rigid sheet: per-particle
@@ -72,5 +86,8 @@ void main() {
 
     // Pointsize
     // Lifted particles grow with the lift; uLiftSize is already scaled by progress.
-    gl_PointSize = uSize * aScale * (100.0 / -viewPosition.z) * (1.0 + falloff * uLiftSize);
+    // The hover brush is a second, independent factor, so the two compose.
+    gl_PointSize = uSize * aScale * (100.0 / -viewPosition.z)
+        * (1.0 + falloff * uLiftSize)
+        * (1.0 + hover * uHoverSize);
 }

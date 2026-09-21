@@ -174,3 +174,45 @@ html::-webkit-scrollbar {
   text-shadow: none;
 }
 
+@utility parallaxImage {
+  animation: parallaxImage 0.3s ease-out forwards;
+  animation-delay: 100ms;
+}
+
+@keyframes parallaxImage {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ParralaxImage.tsx already skips the reveal under reduced motion; this is the
+   belt-and-braces for anything that adds the class directly, and for a failed
+   hydration. opacity has to be restored alongside animation: none because the
+   element this lands on starts at opacity-0 — cancelling the animation without
+   it would leave the image invisible rather than merely still. Deliberately
+   unlayered, so it outranks the opacity-0 utility. */
+@media (prefers-reduced-motion: reduce) {
+  .parallaxImage {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  /* With the hero canvas gated off there is nothing else in the stage, so the
+     logo carries the shot on its own and grows to suit. Done in CSS rather than
+     through MotionGate because the logo is markup in a server component: no
+     client boundary, no hydration flash, and it still holds if JS never runs.
+
+     max() because 20vw is only bigger than the default 361px above ~1805px wide
+     — on a phone it would be a 78px mark in an empty frame. The existing
+     max-w-[calc(100%-2rem)] utility still caps the top end. */
+  .hero-logo svg {
+    width: max(24vw, 22.5625rem);
+  }
+}

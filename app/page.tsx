@@ -7,6 +7,8 @@ import ParticlesScene from "./ThreeScenes/ParticlesScene/ParticlesScene";
 import HeroCanvas from "./ThreeScenes/HeroScene/HeroCanvas";
 import MobileAccordian from "./components/shared/MobileAccordian";
 import EquipmentScene from "./ThreeScenes/EquipmentScene/EquipmentScene";
+import MotionGate from "./ThreeScenes/shared/MotionGate";
+import ParralaxImage from "./components/shared/ParralaxImage";
 
 
 export default function Home() {
@@ -19,7 +21,9 @@ export default function Home() {
           {/* ThreeJS Scene */}
           <section id="hero" className="h-[110vh]">
             <div className="hero-stage relative w-screen h-[110vh] overflow-hidden">
-              <HeroCanvas />
+              <MotionGate>
+                <HeroCanvas />
+              </MotionGate>
 
               <div className="hero-logo absolute inset-x-0 top-0 h-screen z-10 flex items-center justify-center pointer-events-none">
                 <svg
@@ -57,32 +61,38 @@ export default function Home() {
                 id="about-images"
                 className="flex flex-col gap-y-8 md:flex-row md:items-start md:gap-x-3.5">
                 <div className="flex min-w-0 flex-col justify-start items-start gap-y-4 md:flex-1">
-                  <Image
-                    className="w-full h-auto"
-                    src="/images/about-01.png"
-                    alt="Temple Studios exterior"
-                    width={361}
-                    height={361}
-                  />
-                  <figcaption className="mono-img-caption uppercase">
-                    Temple Studios / Exterior
-                  </figcaption>
+                  <ParralaxImage delay={90}>
+                    <div className="flex min-w-0 flex-col justify-start items-start gap-y-4 md:flex-1">
+                      <Image
+                        className="w-full h-auto"
+                        src="/images/about-01.png"
+                        alt="Temple Studios exterior"
+                        width={361}
+                        height={361}
+                      />
+                      <figcaption className="mono-img-caption uppercase">
+                        Temple Studios / Exterior
+                      </figcaption>
+                    </div>
+                  </ParralaxImage>
                 </div>
 
                 <div className="flex w-full min-w-0 flex-col gap-y-section-lg md:max-w-270 md:grow md:shrink md:basis-100 lg:min-w-100">
-                  <div className="flex flex-1 flex-col justify-start items-start gap-y-4">
-                    <Image
-                      className="w-full h-auto md:min-w-100 "
-                      src="/images/about-02.png"
-                      alt="Live room interior"
-                      width={361}
-                      height={448}
-                      loading="eager"
-                    />
-                    <figcaption className="mono-img-caption uppercase">
-                      LIVE ROOM
-                    </figcaption>
-                  </div>
+                  <ParralaxImage delay={180}>
+                    <div className="flex flex-1 flex-col justify-start items-start gap-y-4">
+                      <Image
+                        className="w-full h-auto md:min-w-100 "
+                        src="/images/about-02.png"
+                        alt="Live room interior"
+                        width={361}
+                        height={448}
+                        loading="eager"
+                      />
+                      <figcaption className="mono-img-caption uppercase">
+                        LIVE ROOM
+                      </figcaption>
+                    </div>
+                  </ParralaxImage>
                   <div className="flex flex-col gap-y-section md:max-w-360 pb-16 md:pb-24">
                     <h3 className="display-lg">
                       The estate combines residential comfort with professional recording
@@ -101,7 +111,9 @@ export default function Home() {
 
           <div className="relative flex w-full flex-col items-center">
             <div className="hidden md:block md:absolute md:inset-x-0 md:top-0 md:-translate-y-16">
-              <EquipmentScene />
+              <MotionGate>
+                <EquipmentScene />
+              </MotionGate>
             </div>
 
             <section
@@ -144,7 +156,9 @@ export default function Home() {
             id="book"
             className="footer-canvas relative w-screen h-[90vh] mt-[-50vh] overflow-hidden pointer-events-none min-[1396px]:pointer-events-auto">
             {/* <FooterCanvas /> */}
-            <ParticlesScene />
+            <MotionGate>
+              <ParticlesScene />
+            </MotionGate>
           </footer>
         </div>
       </main>

@@ -10,6 +10,7 @@ import { ToneMappingMode } from 'postprocessing';
 import { BlendFunction } from "postprocessing";
 
 import {
+  HOVER,
   LIFT,
   applyLiftStops,
   NOISE_DEFAULTS,
@@ -17,6 +18,7 @@ import {
   resolveParticleSize,
   resolveSubdivisions,
   solveFov,
+  type HoverState,
   type LiftState,
 } from "./particlesSceneDefaults";
 import { buildLandscapePoints } from "./prepareLandscapePoints";
@@ -44,6 +46,11 @@ type Uniforms = {
   uLiftSize: number;
   uEdgeFadeStart: number;
   uIntensity: number;
+  uPointer: THREE.Vector2;
+  uHoverRadius: THREE.Vector2;
+  uHoverStrength: number;
+  uHoverSize: number;
+  uHoverPower: number;
 };
 
 const DEFAULT_UNIFORMS: Uniforms = {
@@ -64,6 +71,12 @@ const DEFAULT_UNIFORMS: Uniforms = {
   uLiftSize: 0,
   uEdgeFadeStart: LIFT.edgeFadeStart,
   uIntensity: PARTICLES.intensity,
+  // Parked off-screen with zero strength, so nothing hovers until a mouse moves.
+  uPointer: new THREE.Vector2(0, -2),
+  uHoverRadius: new THREE.Vector2(HOVER.radius, HOVER.radius),
+  uHoverStrength: 0,
+  uHoverSize: HOVER.sizeScale,
+  uHoverPower: HOVER.power,
 }
 
 const ParticlesShader = shaderMaterial(
@@ -82,13 +95,32 @@ declare module "@react-three/fiber" {
 type ParticlesProps = {
   /** Scroll-gesture lift target, owned and mutated by ParticlesScene. */
   lift: LiftState;
+  /** Mouse-hover brush, owned and mutated by ParticlesScene. Desktop mouse only. */
+  hover: HoverState;
+  /** Mirrors the scene's inView: the fade resets on the falling edge. */
+  hoverEnabled: boolean;
   /** Same URL ParticlesScene preloads, so the fetch is already in flight or cached. */
   modelUrl: string;
 };
 
-export default function Particles({ lift, modelUrl }: ParticlesProps) {
+export default function Particles({
+  lift,
+  hover,
+  hoverEnabled,
+  modelUrl,
+}: ParticlesProps) {
   const materialRef = useRef<InstanceType<typeof ParticlesShader>>(null);
   const smoothedLift = useRef(0);
+  // The eased brush centre, so it trails the cursor rather than snapping to it.
+  const smoothedPointer = useRef(new THREE.Vector2(0, -2));
+  const smoothedHover = useRef(0);
+
+  // frameloop goes to "never" off screen and R3F resets the clock on resume, so
+  // delta does not cover the gap and a frozen fade would thaw as a stale blob at
+  // a stale position. Zero it while nothing is rendering instead.
+  useEffect(() => {
+    if (!hoverEnabled) smoothedHover.current = 0;
+  }, [hoverEnabled]);
 
   const camera = useThree((state) => state.camera);
   const gl = useThree((state) => state.gl);
@@ -190,6 +222,59 @@ export default function Particles({ lift, modelUrl }: ParticlesProps) {
     material.uniforms.uLiftScatter.value = LIFT.scatter;
     material.uniforms.uEdgeFadeStart.value = LIFT.edgeFadeStart;
     material.uniforms.uIntensity.value = PARTICLES.intensity;
+
+    // --- Pointer hover -----------------------------------------------------
+    // Clamped because the warm-up advance() above passes a millisecond timestamp
+    // into a zeroed seconds clock, so the first frame's delta is in the hundreds.
+    const step = Math.min(delta, 0.1);
+    const hoverK = 1 - Math.exp(-HOVER.smoothing * step);
+
+    // debugHover holds the brush on at canvas centre for tuning without a mouse.
+    const held = HOVER.debugHover > 0;
+    let inside = false;
+
+    if (held) {
+      smoothedPointer.current.set(0, 0);
+    } else if (hover.active) {
+      // The canvas box, read per frame rather than cached on pointermove: a wheel
+      // scroll moves the footer under a stationary cursor, and pointermove does
+      // not fire for that. getBoundingClientRect is already viewport-relative, so
+      // it composes with clientX/clientY with no scroll term — which is also what
+      // keeps it correct under Lenis.
+      const rect = gl.domElement.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        const px = (hover.clientX - rect.left) / rect.width;
+        const py = (hover.clientY - rect.top) / rect.height;
+        inside = px >= 0 && px <= 1 && py >= 0 && py <= 1;
+        if (inside) {
+          // NDC y is +1 at the top, hence the flip: this is compared against
+          // baseClip.xy / baseClip.w in the shader, not used as a raw tilt.
+          const ndcX = px * 2 - 1;
+          const ndcY = 1 - py * 2;
+          // Jump rather than ease while the brush is still invisible, so it does
+          // not sweep across the terrain to where the cursor actually entered.
+          if (smoothedHover.current < 0.01) {
+            smoothedPointer.current.set(ndcX, ndcY);
+          } else {
+            smoothedPointer.current.x += (ndcX - smoothedPointer.current.x) * hoverK;
+            smoothedPointer.current.y += (ndcY - smoothedPointer.current.y) * hoverK;
+          }
+        }
+      }
+    }
+
+    // Written every frame, never inside the branch above, so an exit always fades.
+    const hoverTarget = held ? HOVER.debugHover : inside ? 1 : 0;
+    smoothedHover.current += (hoverTarget - smoothedHover.current) * hoverK;
+
+    // NDC spans 2.0 on both axes, so a brush of radius*height pixels is 2*radius
+    // in y; x shrinks by the aspect to keep it a circle rather than an ellipse.
+    const radiusY = 2 * HOVER.radius;
+    material.uniforms.uPointer.value.copy(smoothedPointer.current);
+    material.uniforms.uHoverRadius.value.set(radiusY * (height / Math.max(width, 1)), radiusY);
+    material.uniforms.uHoverStrength.value = smoothedHover.current;
+    material.uniforms.uHoverSize.value = HOVER.sizeScale;
+    material.uniforms.uHoverPower.value = HOVER.power;
   });
   
   return (

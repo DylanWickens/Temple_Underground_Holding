@@ -283,6 +283,45 @@ export const LIFT_STOPS: Stop<LiftStopValues>[] = [
   { width: 3840, value: { ...LIFT_SHARED, maxLift: 120, effortPx: 4000, radiusX: 0.63 } },
 ];
 
+// ---------------------------------------------------------------------------
+// Pointer hover
+// ---------------------------------------------------------------------------
+
+/**
+ * Raw pointer input, owned and mutated by ParticlesScene's listener and only read
+ * in useFrame. A shared mutable object for the same reason as LiftState: it changes
+ * on every mouse move and must never re-render the Canvas.
+ *
+ * Client pixels rather than NDC: the conversion needs the live canvas box, which
+ * only Particles has, and it has to happen per frame rather than per event.
+ */
+export type HoverState = {
+  clientX: number;
+  clientY: number;
+  /** A mouse is on the page. False on touch, and while the footer is out of view. */
+  active: boolean;
+};
+
+/**
+ * The hover brush. Deliberately has no stop table: radius is a fraction of canvas
+ * height and the aspect correction happens per frame, so it is already resolution
+ * independent in a way maxLift/effortPx are not.
+ */
+export const HOVER = {
+  /** Brush radius as a fraction of canvas HEIGHT. */
+  radius: 0.17,
+  /** Peak point-size gain at the brush centre. Tuned up from the 0.2 spec: with
+   *  power above 1 the growth is concentrated in the core, so a larger peak reads
+   *  as the same size of brush rather than a bigger one. */
+  sizeScale: 0.48,
+  /** Falloff exponent. >1 tightens the core; never 0 (pow(0,0) is undefined). */
+  power: 2.05,
+  /** Frame-rate independent ease for the cursor follow and the enter/exit fade. */
+  smoothing: 4.75,
+  /** Dev GUI only. When > 0 it holds the brush on so the look can be tuned. */
+  debugHover: 0,
+};
+
 /** Width tracking. The dev GUI switches it off the moment a lift slider is touched. */
 export const LIFT_TRACKING = { enabled: true };
 

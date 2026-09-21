@@ -17,6 +17,7 @@ export const DEV_GUI_ORDER = {
   equipmentPostProcessing: 5,
   particlesFraming: 10,
   particlesScrollLift: 15,
+  particlesHover: 17,
   footerPointCloud: 20,
   footerPostProcessing: 30,
 } as const;

@@ -12,6 +12,7 @@ import {
   LIFT,
   edgeMaskImage,
   registerEdgeMaskTarget,
+  type HoverState,
   type LiftState,
 } from "./particlesSceneDefaults";
 import { useSceneActivation } from "../shared/useSceneActivation";
@@ -45,6 +46,12 @@ export default function ParticlesScene() {
   // and is read in useFrame, so its mutations must never re-render the Canvas.
   // useState only pins the identity across renders.
   const [lift] = useState<LiftState>(() => ({ value: 0 }));
+  // Same contract as `lift`: a stable mutable object, read in useFrame.
+  const [hover] = useState<HoverState>(() => ({
+    clientX: 0,
+    clientY: 0,
+    active: false,
+  }));
 
   useEffect(() => {
     if (!lenis || !inView) return;
@@ -80,6 +87,35 @@ export default function ParticlesScene() {
     };
   }, [lenis, inView, lift]);
 
+  // A window listener rather than R3F's pointer events: the footer carries
+  // pointer-events-none below 1396px (page.tsx), so the canvas is not a hit-test
+  // target there at all. Same shape as the scroll gesture above — a listener
+  // mutates a stable object, the frame loop reads it, nothing re-renders.
+  useEffect(() => {
+    if (!inView) return;
+
+    const onMove = (e: PointerEvent) => {
+      // Mouse only. A hover brush has no meaning on touch, and following a finger
+      // would fight the scroll gesture this footer already owns.
+      if (e.pointerType !== "mouse") return;
+      hover.clientX = e.clientX;
+      hover.clientY = e.clientY;
+      hover.active = true;
+    };
+    // Cursor off the page entirely: fade out rather than strand the brush.
+    const onLeave = () => {
+      hover.active = false;
+    };
+
+    window.addEventListener("pointermove", onMove, { passive: true });
+    document.addEventListener("pointerleave", onLeave);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerleave", onLeave);
+      hover.active = false;
+    };
+  }, [inView, hover]);
+
   // Bloom cannot fall off inside its own render target, so the composite is
   // ramped out at the top edge instead. See EDGE_MASK in the defaults.
   return (
@@ -110,7 +146,12 @@ export default function ParticlesScene() {
           />
           <ResponsiveCamera />
           <Suspense fallback={null}>
-            <Particles lift={lift} modelUrl={MODEL_URL} />
+            <Particles
+              lift={lift}
+              hover={hover}
+              hoverEnabled={inView}
+              modelUrl={MODEL_URL}
+            />
           </Suspense>
         </Canvas>
       ) : null}
